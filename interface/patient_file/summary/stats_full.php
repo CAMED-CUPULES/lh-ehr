@@ -1,11 +1,28 @@
 <?php
-/**
+/*
+ * Stats Full
+ *
+ * Copyright (C) 2016-2017 Terry Hill <teryhill@librehealth.io>
  * Copyright (C) 2005-2014 Rod Roark <rod@sunsetsystems.com>
  *
- * This program is free software; you can redistribute it and/or
+ * LICENSE: This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * as published by the Free Software Foundation; either version 3
  * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * LICENSE: This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0
+ * See the Mozilla Public License for more details.
+ * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * @package LibreHealth EHR
+ * @author Rod Roark <rod@sunsetsystems.com>
+ * @link http://librehealth.io
  */
 
 //SANITIZE ALL ESCAPES
@@ -21,6 +38,8 @@ require_once($GLOBALS['srcdir'].'/lists.inc');
 require_once($GLOBALS['srcdir'].'/acl.inc');
 require_once($GLOBALS['fileroot'].'/custom/code_types.inc.php');
 require_once($GLOBALS['srcdir'].'/options.inc.php');
+require_once($GLOBALS['srcdir'].'/headers.inc.php');
+
 
  // Check authorization.
  if (acl_check('patients','med')) {
@@ -46,53 +65,91 @@ $language = $tmp['language'];
 
 <link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
 
-<title><?php echo xlt('Patient Issues'); ?></title>
+<span class="title" style="display: none;">Issues</span>
 
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/library/dialog.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/library/js/jquery.js"></script>
+    <?php call_required_libraries(array("jquery-min-3-1-1" , "font-awesome" , "iziModalToast")); ?>
 
 <script language="JavaScript">
 
-// callback from add_edit_issue.php:
-function refreshIssue(issue, title) {
-    top.restoreSession();
-    location.reload();
-}
+    //variables to store titles and subtitles
+    var iziTitle = "";
+    var iziSubTitle = "";
 
-function dopclick(id,category) {
-    <?php if (acl_check('patients','med','','write')): ?>
-    if (category == 0) category = '';
-    dlgopen('add_edit_issue.php?issue=' + encodeURIComponent(id) + '&thistype=' + encodeURIComponent(category), '_blank', 550, 400);
-    <?php else: ?>
-    alert("<?php echo addslashes( xl('You are not authorized to add/edit issues') ); ?>");
-    <?php endif; ?>
-}
+    $(".fa-refresh").click(function () {
+        top.restoreSession();
+        location.reload();
+    });
+    // callback from add_edit_issue.php:
+    function refreshIssue(issue, title) {
+        top.restoreSession();
+        location.reload();
+    }
 
-// Process click on number of encounters.
-function doeclick(id) {
-    dlgopen('../problem_encounter.php?issue=' + id, '_blank', 550, 400);
-}
+    //takes 3 parameters, the id of issue to be edited, the category(allergy, mediacal etc) and type(whether new or edit)
+    function dopclick(id, category , type) {
+        <?php if (acl_check('patients', 'med', '', 'write')): ?>
+        if (category == 0) category = '';
+        iziTitle = "<?php echo xlt('Add New Issue'); ?>";
+        iziSubTitle = "<?php echo xlt('Add Relevant Patient Issues'); ?>";
+        initIziLink('add_edit_issue.php?issue=' + encodeURIComponent(id) + '&thistype=' + encodeURIComponent(category), 850, 400,category, type);
+        <?php else: ?>
+        alert("<?php echo addslashes(xl('You are not authorized to add/edit issues')); ?>");
+        <?php endif; ?>
+    }
+  
+        //function to remove underscore
+    function titleFormat(str){
+        var newstr = str.replace(/_/g, " ");
+        return newstr.toUpperCase();
+    }
+    // function to open izi-modal
+    function  initIziLink(link , width , height, category, type) {
 
-// Process click on diagnosis for patient education popup.
-function educlick(codetype, codevalue) {
-  dlgopen('../education.php?type=' + encodeURIComponent(codetype) +
-    '&code=' + encodeURIComponent(codevalue) +
-    '&language=<?php echo urlencode($language); ?>',
-    '_blank', 1024, 750,true); // Force a new window instead of iframe to address cross site scripting potential
-}
+        category = titleFormat(category);
+      
+        $("#izi-iframe").iziModal({
+            title: '<b style="color: white">'+category+'</b>',
+            subtitle: type+ " Issue",
+            headerColor: '#88A0B9',
+            closeOnEscape: true,
+            fullscreen:true,
+            overlayClose: false,
+            closeButton: true,
+            theme: 'light',  // light
+            iframe: true,
+            width:width,
+            focusInput: true,
+            padding:2,
+            iframeHeight: height,
+            iframeURL:link,
+            onClosed: function () {
+                location.reload();
+            }
+        });
+        setTimeout(function () {
+            call_izi();
+        },500);
 
-// Add Encounter button is clicked.
-function newEncounter() {
- var f = document.forms[0];
- top.restoreSession();
-<?php if ($GLOBALS['concurrent_layout']) { ?>
- parent.left_nav.setRadio(window.name, 'nen');
- location.href='../../forms/patient_encounter/new.php?autoloaded=1&calenc=';
-<?php } else { ?>
- top.Title.location.href='../encounter/encounter_title.php';
- top.Main.location.href='../encounter/patient_encounter.php?mode=new';
-<?php } ?>
-}
+    }
+
+    function call_izi() {
+        $("#izi-iframe").iziModal('open');
+    }
+
+    // Process click on number of encounters.
+    function doeclick(id) {
+        iziTitle = "<?php echo xlt('Add Ecounter/Issue'); ?>";
+        iziSubTitle = "<?php echo xlt('Add Relevant Encounter/Issues about Patient'); ?>";
+        initIziLink('../problem_encounter.php?issue=' + id, 1250, 460 , iziTitle , iziSubTitle);
+    }
+
+    // Add Encounter button is clicked.
+    function newEncounter() {
+        var f = document.forms[0];
+        top.restoreSession();
+        location.href = '../../forms/patient_encounter/new.php?autoloaded=1&calenc=';
+    }
 
 </script>
 
@@ -100,9 +157,13 @@ function newEncounter() {
 
 <body class="body_top">
 
+<div id="izi-iframe"></div><!-- to initialize the izimodal -->
+
 <br>
 <div style="text-align:center" class="buttons">
-  <a href='javascript:;' class='css_button' id='back'><span><?php echo htmlspecialchars( xl('Back'), ENT_NOQUOTES); ?></span></a>
+  <a href="demographics.php" class="css_button" onclick="top.restoreSession()">
+    <span><?php echo htmlspecialchars(xl('Back To Patient'),ENT_NOQUOTES);?></span>
+  </a>
 </div>
 <br>
 <br>
@@ -136,7 +197,7 @@ foreach ($ISSUE_TYPES as $focustype => $focustitles) {
   if(($focustype=='allergy' || $focustype=='medication') && $GLOBALS['erx_enable'])
   echo "<a href='../../eRx.php?page=medentry' class='css_button_small' onclick='top.restoreSession()' ><span>" . htmlspecialchars( xl('Add'), ENT_NOQUOTES) . "</span></a>\n";
   else
-  echo "<a href='javascript:;' class='css_button_small' onclick='dopclick(0,\"" . htmlspecialchars($focustype,ENT_QUOTES)  . "\")'><span>" . htmlspecialchars( xl('Add'), ENT_NOQUOTES) . "</span></a>\n";
+  echo "<a href='javascript:;' class='css_button_small' onclick='dopclick(0,\"" . htmlspecialchars($focustype,ENT_QUOTES)  . "\", \"Add\")'><span>" . htmlspecialchars( xl('Add'), ENT_NOQUOTES) . "</span></a>\n";
   echo "  <span class='title'>" . htmlspecialchars($disptype,ENT_NOQUOTES) . "</span>\n";
   // echo " <table style='margin-bottom:1em;text-align:center'>";
   echo " <table style='margin-bottom:1em;'>";
@@ -223,9 +284,9 @@ foreach ($ISSUE_TYPES as $focustype => $focustitles) {
     elseif($row['erx_uploaded']==1 && $focustype=='medication') $click_class='';
 
     echo " <tr class='$bgclass detail' $colorstyle>\n";
-    echo "  <td style='text-align:left' class='$click_class' id='$rowid'>" . text($disptitle) . "</td>\n";
-    echo "  <td>" . text($row['begdate']) . "&nbsp;</td>\n";
-    echo "  <td>" . text($row['enddate']) . "&nbsp;</td>\n";
+    echo "  <td style='text-align:left' data-text='$disptitle' class='$click_class' id='$rowid'>" . text($disptitle) . "</td>\n";
+    echo "  <td>" . text(date(DateFormatRead(true), strtotime($row['begdate']))) . "&nbsp;</td>\n";
+    echo "  <td>" . text(date(DateFormatRead(true), strtotime($row['enddate']))) . "&nbsp;</td>\n";
     // both codetext and statusCompute have already been escaped above with htmlspecialchars)
     echo "  <td>" . $codetext . "</td>\n";
     echo "  <td>" . $statusCompute . "&nbsp;</td>\n";
@@ -260,10 +321,11 @@ echo "</table>";
 // jQuery stuff to make the page a little easier to use
 
 $(document).ready(function(){
-    $(".statrow").mouseover(function() { $(this).toggleClass("highlight"); });
-    $(".statrow").mouseout(function() { $(this).toggleClass("highlight"); });
+    $(".statrow")
+        .mouseover(function() { $(this).toggleClass("highlight"); })
+        .mouseout(function() { $(this).toggleClass("highlight"); })
+        .click(function() { dopclick(this.id, this.innerHTML, 'Edit')});
 
-    $(".statrow").click(function() { dopclick(this.id,0); });
     $(".editenc").click(function(event) { doeclick(this.id); });
     $("#newencounter").click(function() { newEncounter(); });
     $("#history").click(function() { GotoHistory(); });
@@ -271,29 +333,19 @@ $(document).ready(function(){
 
     $(".noneCheck").click(function() {
       top.restoreSession();
-      $.post( "../../../library/ajax/lists_touch.php", { type: this.name, patient_id: <?php echo htmlspecialchars($pid,ENT_QUOTES); ?> });
-      $(this).hide(); 
+      $.post( "../../../library/ajax/lists_touch.php", { type: this.name, patient_id: <?php echo htmlspecialchars($pid,ENT_QUOTES); ?>, token: "<?php echo $_SESSION['token'];?>" });
+      $(this).hide();
     });
 });
 
 var GotoHistory = function() {
     top.restoreSession();
-<?php if ($GLOBALS['concurrent_layout']): ?>
-    parent.left_nav.setRadio(window.name,'his');
     location.href='../history/history_full.php';
-<?php else: ?>
-    location.href='../history/history_full.php';
-<?php endif; ?>
 }
 
 var GoBack = function () {
     top.restoreSession();
-<?php if ($GLOBALS['concurrent_layout']): ?>
-    parent.left_nav.setRadio(window.name,'dem');
     location.href='demographics.php';
-<?php else: ?>
-    location.href="patient_summary.php";
-<?php endif; ?>
 }
 
 </script>

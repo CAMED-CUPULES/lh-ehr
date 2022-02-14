@@ -6,8 +6,8 @@ $controllerUrl = $GLOBALS['webroot']."/interface/tags_filters/index.php?action="
 <head>
     <link rel="stylesheet" href="<?php echo $css_header; ?>" type="text/css">
     <style type="text/css">
-        @import "<?php echo $GLOBALS['webroot'] ?>/library/js/datatables/media/css/demo_page.css";
-        @import "<?php echo $GLOBALS['webroot'] ?>/library/js/datatables/media/css/demo_table.css";
+        @import "<?php echo $GLOBALS['standard_js_path'] ?>datatables/media/css/demo_page.css";
+        @import "<?php echo $GLOBALS['standard_js_path'] ?>datatables/media/css/demo_table.css";
 
         body.body_top {
             margin:0;
@@ -54,6 +54,10 @@ $controllerUrl = $GLOBALS['webroot']."/interface/tags_filters/index.php?action="
 
         #time {
             font-size: 12px;
+        }
+
+        thead {
+            margin-top: 1.5px; /**/
         }
 
         table.display td {
@@ -183,15 +187,23 @@ $controllerUrl = $GLOBALS['webroot']."/interface/tags_filters/index.php?action="
             position: fixed;
             top: 36px;
             right: 0px;
-            padding-right:100px;
+            padding-right:75px; /*was 100px*/
             background-color: #ecf0f1;
+            margin-right: 100px; /**/
+            width: 56%; /**/
         }
 
         #patients-tags-table_length {
             position: fixed;
             top: 36px;
-            width: 100%;
+            width: 44%; /*was 100%*/
             background-color: #ecf0f1;
+        }
+
+        #patients-tags-table_filter label input {
+            float: right; /**/
+            margin-right: -175px; /**/
+            margin-top: -20px; /**/
         }
 
         #<?php echo $this->dataTable->getTableId() ?> thead {
@@ -228,7 +240,7 @@ $controllerUrl = $GLOBALS['webroot']."/interface/tags_filters/index.php?action="
     <script src="./assets/jquery/jquery.js"></script>
     <script src="./assets/bootstrap/js/bootstrap.min.js"></script>
 
-    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/datatables/media/js/jquery.dataTables.js"></script>
+    <script type="text/javascript" src="<?php echo $GLOBALS['standard_js_path'] ?>datatables/media/js/jquery.dataTables.js"></script>
     <script src="<?php echo $GLOBALS['webroot'] ?>/interface/tags_filters/assets/js/data_table.js"></script>
 
     <script type="text/javascript">
@@ -280,7 +292,7 @@ $controllerUrl = $GLOBALS['webroot']."/interface/tags_filters/index.php?action="
 </head>
 
 
-<body class="body_top">
+<body class="body_top" style="overflow:scroll; height:400px;">
 
 <?php echo $this->content; ?>
 

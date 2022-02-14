@@ -29,6 +29,7 @@ require_once("../globals.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/log.inc");
 require_once("$srcdir/classes/Document.class.php");
+require_once("$srcdir/headers.inc.php");
 
 // Set this to true for production use. If false you will get a "dry run" with no updates.
 $PRODUCTION = true;
@@ -60,7 +61,7 @@ function setpatient(pid, lname, fname, dob) {
 function sel_patient(ename, epid) {
  el_pt_name = ename;
  el_pt_id = epid;
- dlgopen('../main/calendar/find_patient_popup.php', '_blank', 500, 400);
+ dlgopen('<?php echo $GLOBALS["web_root"]; ?>/modules/calendar/find_patient_popup.php', '_blank', 500, 400);
 }
 
 </script>
@@ -231,7 +232,7 @@ if (!empty($_POST['form_submit'])) {
   </td>
  </tr>
 </table>
-<p><input type='submit' name='form_submit' value='<?php echo xla('Merge'); ?>' /></p>
+<p><input type='submit' name='form_submit' class='cp-misc' value='<?php echo xla('Merge'); ?>' /></p>
 </center>
 </form>
 

@@ -1,10 +1,29 @@
 <?php
-// Copyright (C) 2007-2011 Rod Roark <rod@sunsetsystems.com>
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
+/*
+ * Letter
+ *
+ * Copyright (C) 2017 Terry Hill <teryhill@librehealth.io>
+ * Copyright (C) 2007-2011 Rod Roark <rod@sunsetsystems.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * LICENSE: This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0
+ * See the Mozilla Public License for more details.
+ * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * @package LibreHealth EHR
+ * @author Rod Roark <rod@sunsetsystems.com>
+ * @link http://librehealth.io
+ */
 
 // Undo magic quotes and do not allow fake register globals.
 $sanitize_all_escapes  = true;
@@ -12,6 +31,11 @@ $fake_register_globals = false;
 
 include_once("../globals.php");
 include_once($GLOBALS['srcdir'] . "/patient.inc");
+require_once($GLOBALS['srcdir']."/formatting.inc.php");
+require_once("$srcdir/headers.inc.php");
+require_once("$srcdir/CsrfToken.php");
+$DateFormat = DateFormatRead();
+$DateLocale = getLocaleCodeForDisplayLanguage($GLOBALS['language_default']);
 
 $template_dir = $GLOBALS['OE_SITE_DIR'] . "/letter_templates";
 
@@ -56,20 +80,28 @@ $FIELD_TAG = array(
     'PT_SSN'           => xl('PT_SSN'),
     'PT_EMAIL'         => xl('PT_EMAIL'),
     'PT_DOB'           => xl('PT_DOB')
-    
+
 );
 
 $patdata = sqlQuery("SELECT " .
   "p.fname, p.mname, p.lname, p.pid, p.DOB, " .
   "p.street, p.city, p.state, p.phone_home, p.phone_cell, p.ss, p.email, p.postal_code " .
   "FROM patient_data AS p " .
-  "WHERE p.pid = '$pid' LIMIT 1");
+  "WHERE p.pid = ? LIMIT 1", array($pid));
 
 $alertmsg = ''; // anything here pops up in an alert box
 
+if (!empty($_POST)) {
+    if (!isset($_POST['token'])) {
+        error_log('WARNING: A POST request detected with no csrf token found');
+        die('Authentication failed.');
+    } else if (!(  CsrfToken::verifyCsrfTokenAndCompareHash($_POST['token'], '/letter.php.theform'))) {
+        die('Authentication failed.');
+    }
+}
 // If the Generate button was clicked...
-if ($_POST['formaction']=="generate") {    
-    
+if ($_POST['formaction']=="generate") {
+
     $form_pid      = $_POST['form_pid'];
     $form_from     = $_POST['form_from'];
     $form_to       = $_POST['form_to'];
@@ -78,8 +110,8 @@ if ($_POST['formaction']=="generate") {
     $form_format   = $_POST['form_format'];
     $form_body     = $_POST['form_body'];
 
-    $frow = sqlQuery("SELECT * FROM users WHERE id = '$form_from'");
-    $trow = sqlQuery("SELECT * FROM users WHERE id = '$form_to'");
+    $frow = sqlQuery("SELECT * FROM users WHERE id = ?", array($form_from));
+    $trow = sqlQuery("SELECT * FROM users WHERE id = ?", array($form_to));
 
     $datestr = date('j F Y', strtotime($form_date));
     $from_title = $frow['title'] ? $frow['title'] . ' ' : '';
@@ -139,7 +171,7 @@ if ($_POST['formaction']=="generate") {
     $cpstring = str_replace('{'.$FIELD_TAG['PT_SSN'].'}'          , $patdata['ss'], $cpstring);
     $cpstring = str_replace('{'.$FIELD_TAG['PT_EMAIL'].'}'        , $patdata['email'], $cpstring);
     $cpstring = str_replace('{'.$FIELD_TAG['PT_DOB'].'}'          , $patdata['DOB'], $cpstring);
-    
+
     if ($form_format == "pdf") {
       // documentation for ezpdf is here --> http://www.ros.co.nz/pdf/
       require_once ($GLOBALS['fileroot'] . "/library/classes/class.ezpdf.php");
@@ -154,55 +186,55 @@ if ($_POST['formaction']=="generate") {
       }
       else {
         $pdf->selectFont($GLOBALS['fileroot'] . "/library/fonts/Helvetica.afm");
-        $pdf->ezText($cpstring, 12); 
+        $pdf->ezText($cpstring, 12);
       }
       $pdf->ezStream();
       exit;
     }
     else { // $form_format = html
         $cpstring = text($cpstring); //escape to prevent stored cross script attack
-	$cpstring = str_replace("\n", "<br>", $cpstring);
-	$cpstring = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", $cpstring);
+    $cpstring = str_replace("\n", "<br>", $cpstring);
+    $cpstring = str_replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;", $cpstring);
     ?>
         <html>
         <head>
         <style>
         body {
-	 font-family: sans-serif;
-	 font-weight: normal;
-	 font-size: 12pt;
-	 background: white;
-	 color: black;
-	}	
-	.paddingdiv {
-	 width: 524pt;
-	 padding: 0pt;
-	 margin-top: 50pt;
-	}
-	.navigate {
-	 margin-top: 2.5em;
-	}	
-	@media print {
-	 .navigate {
-	  display: none;
-	 }	
-	}	
-	</style>	
-	<title><?php xl('Letter','e'); ?></title>
-	</head>
+     font-family: sans-serif;
+     font-weight: normal;
+     font-size: 12pt;
+     background: white;
+     color: black;
+    }
+    .paddingdiv {
+     width: 524pt;
+     padding: 0pt;
+     margin-top: 50pt;
+    }
+    .navigate {
+     margin-top: 2.5em;
+    }
+    @media print {
+     .navigate {
+      display: none;
+     }
+    }
+    </style>
+    <title><?php xl('Letter','e'); ?></title>
+    </head>
         <body>
-	<div class='paddingdiv'>
-	<?php echo $cpstring; ?>
+    <div class='paddingdiv'>
+    <?php echo $cpstring; ?>
         <div class="navigate">
-	<a href="<?php echo $GLOBALS['rootdir'] . '/patient_file/letter.php?template=autosaved'; ?>">(<?php xl('Back','e'); ?>)</a>
-	</div>
-	<script language='JavaScript'>
-	window.print();
-	</script>
-	</body>
-	</div>
-	<?php
-	exit;
+    <a href="<?php echo $GLOBALS['rootdir'] . '/patient_file/letter.php?template=autosaved'; ?>">(<?php xl('Back','e'); ?>)</a>
+    </div>
+    <script language='JavaScript'>
+    window.print();
+    </script>
+    </body>
+    </div>
+    <?php
+    exit;
     }
 }
 else if (isset($_GET['template']) && $_GET['template'] != "") {
@@ -223,12 +255,12 @@ else if ($_POST['formaction'] == "loadtemplate" && $_POST['form_template'] != ""
     fclose($fh);
     // translate from constant to the definition
     foreach ($FIELD_TAG as $key => $value) {
-        $bodytext = str_replace("{".$key."}", "{".$value."}", $bodytext);	
-    } 
+        $bodytext = str_replace("{".$key."}", "{".$value."}", $bodytext);
+    }
 }
 else if ($_POST['formaction'] == "newtemplate" && $_POST['newtemplatename'] != "") {
     // attempt to save the template
-    $fh = fopen("$template_dir/".$_POST['newtemplatename'], 'w');
+    $fh = fopen("$template_dir/". preg_replace('/[^A-Za-z0-9]/', '_', $_POST['newtemplatename']), 'w');
     // translate from definition to the constant
     $temp_bodytext = $_POST['form_body'];
     foreach ($FIELD_TAG as $key => $value) {
@@ -252,7 +284,7 @@ else if ($_POST['formaction'] == "newtemplate" && $_POST['newtemplatename'] != "
 }
 else if ($_POST['formaction'] == "savetemplate" && $_POST['form_template'] != "") {
     // attempt to save the template
-    $fh = fopen("$template_dir/".$_POST['form_template'], 'w');
+    $fh = fopen("$template_dir/". preg_replace('/[^A-Za-z0-9]/', '_', $_POST['form_template']), 'w');
     // translate from definition to the constant
     $temp_bodytext = $_POST['form_body'];
     foreach ($FIELD_TAG as $key => $value) {
@@ -312,18 +344,16 @@ while ($srow = sqlFetchArray($sres)) {
 <?php html_header_show();?>
 <title><?php xl('Letter Generator','e'); ?></title>
 
-<style type="text/css">@import url(../../library/dynarch_calendar.css);</style>
 <link rel='stylesheet' href='<?php echo $css_header ?>' type='text/css'>
+<link rel="stylesheet" href="../../library/css/jquery.datetimepicker.css">
 
 <!-- supporting javascript code -->
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="../../library/js/jquery.datetimepicker.full.min.js"></script>
 
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/topdialog.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar.js"></script>
-<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar_setup.js"></script>
 
 <script language="JavaScript">
 <?php echo $ulist; ?>
@@ -349,21 +379,21 @@ function insertAtCaret(areaId,text) {
     var txtarea = document.getElementById(areaId);
     var scrollPos = txtarea.scrollTop;
     var strPos = 0;
-    var br = ((txtarea.selectionStart || txtarea.selectionStart == '0') ? 
+    var br = ((txtarea.selectionStart || txtarea.selectionStart == '0') ?
             "ff" : (document.selection ? "ie" : false ) );
-    if (br == "ie") { 
+    if (br == "ie") {
         txtarea.focus();
         var range = document.selection.createRange();
         range.moveStart ('character', -txtarea.value.length);
         strPos = range.text.length;
     }
     else if (br == "ff") strPos = txtarea.selectionStart;
-                                                                            
-    var front = (txtarea.value).substring(0,strPos);  
-    var back = (txtarea.value).substring(strPos,txtarea.value.length); 
+
+    var front = (txtarea.value).substring(0,strPos);
+    var back = (txtarea.value).substring(strPos,txtarea.value.length);
     txtarea.value=front+text+back;
     strPos = strPos + text.length;
-    if (br == "ie") { 
+    if (br == "ie") {
         txtarea.focus();
         var range = document.selection.createRange();
         range.moveStart ('character', -txtarea.value.length);
@@ -409,6 +439,7 @@ function insertAtCursor(myField, myValue) {
 <form method='post' action='letter.php' id="theform" name="theform">
 <input type="hidden" name="formaction" id="formaction" value="">
 <input type='hidden' name='form_pid' value='<?php echo $pid ?>' />
+<input type='hidden' name='token' value="<?php echo hash_hmac('sha256', (string) '/letter.php.theform', (string) $_SESSION['token']);?>" />
 
 <center>
 <p>
@@ -440,13 +471,7 @@ function insertAtCursor(myField, myValue) {
   </td>
 
   <td>
-   <input type='text' size='10' name='form_date' id='form_date'
-    value='<?php echo date('Y-m-d'); ?>'
-    title='<?php xl('yyyy-mm-dd date of this letter','e'); ?>'
-    onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' />
-   <img src='../pic/show_calendar.gif' align='absbottom' width='24' height='22'
-    id='img_date' border='0' alt='[?]' style='cursor:pointer'
-    title='<?php xl('Click here to choose a date','e'); ?>' />
+   <input type='text' size='10' name='form_date' id='form_date' value='<?= htmlspecialchars(oeFormatShortDate(date('Y-m-d'))); ?>' />
   </td>
 
  </tr>
@@ -577,9 +602,9 @@ closedir($dh);
 
 </table>
 
-<input type='button' class="addtemplate" value=<?php xl('Save as New','e','\'','\''); ?>>
-<input type='button' name='savetemplate' id="savetemplate" value=<?php xl('Save Changes','e','\'','\''); ?>>
-<input type='button' name='form_generate' id="form_generate" value=<?php xl('Generate Letter','e','\'','\''); ?>>
+<input type='button' class="addtemplate cp-submit" value=<?php xl('Save as New','e','\'','\''); ?>>
+<input type='button' name='savetemplate' class="cp-submit" id="savetemplate" value=<?php xl('Save Changes','e','\'','\''); ?>>
+<input type='button' name='form_generate' class="cp-output" id="form_generate" value=<?php xl('Generate Letter','e','\'','\''); ?>>
 
 </center>
 
@@ -595,7 +620,11 @@ closedir($dh);
 </body>
 
 <script language='JavaScript'>
- Calendar.setup({inputField:"form_date", ifFormat:"%Y-%m-%d", button:"img_date"});
+    $("#form_date").datetimepicker({
+        timepicker: false,
+        format: "<?= $DateFormat; ?>"
+    });
+    $.datetimepicker.setLocale('<?= $DateLocale;?>');
 
 // jQuery stuff to make the page a little easier to use
 
@@ -604,14 +633,14 @@ $(document).ready(function(){
     $("#form_template").change(function() { $("#formaction").val("loadtemplate"); $("#theform").submit(); });
 
     $("#savetemplate").click(function() { SaveTemplate(this); });
-    
+
     $("#letter_field").change(function() { insertAtCursor(document.getElementById("form_body"), $(this).val()); $(this).attr("selectedIndex", "0"); });
-    
+
     $(".addtemplate").click(function() { AddTemplate(this); });
     $(".savenewtemplate").click(function() { SaveNewTemplate(this); });
     $(".deletetemplate").click(function() { DeleteTemplate(this); });
     $(".cancelnewtemplate").click(function() { CancelNewTemplate(this); });
-    
+
     // display the 'new group' DIV
     var AddTemplate = function(btnObj) {
         // show the field details DIV
@@ -620,8 +649,8 @@ $(document).ready(function(){
         $(btnObj).parent().append($("#newtemplatedetail"));
         $('#newtemplatedetail > #newtemplatename').focus();
     };
-    
-    // save the new template 
+
+    // save the new template
     var SaveNewTemplate = function(btnObj) {
         // the template name can only have letters, numbers, spaces and underscores
         // AND it cannot start with a number
@@ -636,7 +665,7 @@ $(document).ready(function(){
         $("#formaction").val("newtemplate");
         $("#theform").submit();
     }
-    
+
     // actually delete a template file
 /*
     var DeleteTemplate = function(btnObj) {
@@ -659,8 +688,8 @@ $(document).ready(function(){
         // reset the new group values to a default
         $('#newtemplatedetail > #newtemplatename').val("");
     };
-    
-    
+
+
     // save the template, overwriting the older version
     var SaveTemplate = function(btnObj) {
         if (! confirm("<?php xl('You are about to permanently replace the existing template. Are you sure you wish to continue?','e'); ?>")) {

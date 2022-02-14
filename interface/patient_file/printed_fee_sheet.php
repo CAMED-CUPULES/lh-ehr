@@ -17,6 +17,7 @@ require_once("$srcdir/billing.inc");
 require_once("$srcdir/classes/Address.class.php");
 require_once("$srcdir/classes/InsuranceCompany.class.php");
 require_once("$srcdir/formatting.inc.php");
+require_once("$srcdir/headers.inc.php");
 
 function genColumn($ix) {
     global $html;
@@ -84,7 +85,7 @@ if (empty($_GET['fill'])) {
     $form_fill = $_GET['fill'];
 }
 
-// Show based on session array or single pid? 
+// Show based on session array or single pid?
 $pid_list = array();
 
 if(!empty($_SESSION['pidList']) and $form_fill == 2)
@@ -95,7 +96,7 @@ else if ($form_fill == 1)
 {
     array_push($pid_list,$pid); //get from active PID
 } else {
-    array_push($pid_list,''); // empty element for blank form 
+    array_push($pid_list,''); // empty element for blank form
 }
 
 // This file is optional. You can create it to customize how the printed
@@ -276,6 +277,7 @@ div.pagebreak {
 page-break-after: always;
 height: ${page_height}pt;
 }
+
 </style>";
 
 $html .= "<title>" . htmlspecialchars($frow['name']) . "</title>
@@ -318,7 +320,7 @@ $frow = sqlQuery("SELECT * FROM facility WHERE primary_business_entity = 1");
 
 // If primary is not set try to old method of guessing...for backward compatibility
 if (empty($frow)) {
-    $frow = sqlQuery("SELECT * FROM facility " . 
+    $frow = sqlQuery("SELECT * FROM facility " .
             "ORDER BY billing_location DESC, accepts_assignment DESC, id LIMIT 1");
 }
 
@@ -343,6 +345,7 @@ foreach ($pid_list as $pid) {
     while (--$pages >= 0) {
 
         $html .= genFacilityTitle(xl('Superbill/Fee Sheet'), -1);
+
 
         $html .="
 <table class='bordertbl' cellspacing='0' cellpadding='0' width='100%'>
@@ -397,9 +400,9 @@ foreach ($pid_list as $pid) {
                         "FROM forms AS f " .
                         "JOIN form_encounter AS fe ON fe.id = f.form_id " .
                         "LEFT JOIN users AS u ON u.username = f.user " .
-                        "WHERE f.pid = '$pid' AND f.encounter = '$encounter' AND f.formdir = 'patient_encounter' AND f.deleted = 0 " .
+                        "WHERE f.pid = ? AND f.encounter = ? AND f.formdir = 'patient_encounter' AND f.deleted = 0 " .
                         "ORDER BY f.id LIMIT 1";
-                $encdata = sqlQuery($query);
+                $encdata = sqlQuery($query, array($pid, $encounter));
                 if (!empty($encdata['username'])) {
                     $html .= $encdata['fname'] . ' ' . $encdata['mname'] . ' ' . $encdata['lname'];
                 }
@@ -424,9 +427,9 @@ foreach ($pid_list as $pid) {
                 if ($form_fill) {
                     foreach (array('primary', 'secondary', 'tertiary') as $instype) {
                         $query = "SELECT * FROM insurance_data WHERE " .
-                                "pid = '$pid' AND type = '$instype' " .
+                                "pid = '?' AND type = '?' " .
                                 "ORDER BY date DESC LIMIT 1";
-                        $row = sqlQuery($query);
+                        $row = sqlQuery($query, array($pid, $instype));
                         if ($row['provider']) {
                             $icobj = new InsuranceCompany($row['provider']);
                             $adobj = $icobj->get_address();
@@ -534,9 +537,9 @@ foreach ($pid_list as $pid) {
 </tr>
 
 </table>";
-        
+
         $html .= "</div>";  //end of div.pageLetter
-        
+
     } // end while
     $pages = $saved_pages; //RESET
 }
@@ -545,10 +548,11 @@ foreach ($pid_list as $pid) {
 if ($form_fill != 2) {   //use native browser 'print' for multipage
 $html .= "<div id='hideonprint'>
 <p>
-<input type='button' value='";
-
-$html .= xla('Print');
-$html .="' id='printbutton' /> 
+ <input type='button' class='cp-output' value='";
+        $html .= xla('Print');
+        $html .="' id='printbutton' />
+</p>
+<br>
 </div>";
 }
 

@@ -18,6 +18,10 @@ a:hover {
   color: #ff5555;
 }
 
+.centerBody {
+    text-align: center;
+}
+
 .menu {
     font-family: sans-serif;
     font-style: italic;
@@ -159,22 +163,31 @@ a:hover {
     color: #000000;
 }
 
+.sorting_1:hover{
+    cursor: url('theme_assets/cursors/refresh_icon.png'), pointer;
+    color:#ff5555;
+}
+
+.tab-button {
+    margin-left: 2px;
+}
+
 /*=============================================================
  * Here we have taken variables from globals.php and turned them into CSS classes 
  * these should be used in place of the GLOBAL variables -- JRM March 2008
  *=============================================================*/
 .body_top { background-color: #eae6ff; margin: 8px }    /* $top_bg_line */
 .bgcolor2 { background-color: #eae6ff; }    /* $GLOBALS['style']['BGCOLOR2'] */
-.body_bottom { background: url('../pic/aquabg.gif') repeat; margin: 8px }  /* $bottom_bg_line */
+.body_bottom { background: url('theme_assets/aquabg.gif') repeat; margin: 8px }  /* $bottom_bg_line */
 .body_title { background-color: #FFF; }  /* $title_bg_line */
 .body_nav { background-color: #eae6ff; }    /* $nav_bg_line */
 .body_filler { background-color: #f7f0d5; } /* $login_filler_line */
-.body_login { background: url('../pic/aquabg.gif') repeat; } /* $login_body_line */
+.body_login { background: url('theme_assets/aquabg.gif') repeat; } /* $login_body_line */
 .table_bg { background-color: #ccc; }           /* $table_bg */
 .bgcolor1 { background-color: #ccc; }       /* $GLOBALS['style']['BGCOLOR1'] */
 .textcolor11 { background-color: #222; }    /* $GLOBALS['style']['TEXTCOLOR11'] */
 .highlightcolor { background-color: #ddd; } /* $GLOBALS['style']['HIGHLIGHTCOLOR'] */
-.bottom_line { background: url('../pic/aquabg.gif') repeat; }    /* $GLOBALS['style']['BOTTOM_BG_LINE'] */
+.bottom_line { background: url('theme_assets/aquabg.gif') repeat; }    /* $GLOBALS['style']['BOTTOM_BG_LINE'] */
 .logobar { background-color: #24262c; height: 110px; }                 /* $GLOBALS['logoBarHeight'] */
 .navbar { height: 22px; }                   /* $GLOBALS['navBarHeight'] */
 .titlebar { height: 20px; }                 /* $GLOBALS['titleBarHeight'] */
@@ -604,7 +617,7 @@ font-weight: bold;
  * CSS BUTTONS
 */
 .css_button_small {
-    background: transparent url( '../../images/bg_button_a_small.gif' ) no-repeat scroll top right;
+    background: transparent url( 'theme_assets/bg_button_a_small.gif' ) no-repeat scroll top right;
     color: #444;
     display: block;
     float: left;
@@ -616,14 +629,14 @@ font-weight: bold;
 }
 
 .css_button_small span {
-    background: transparent url( '../../images/bg_button_span_small.gif' ) no-repeat;
+    background: transparent url( 'theme_assets/bg_button_span_small.gif' ) no-repeat;
     display: block;
     line-height: 20px;
     padding: 0px 0px 0px 10px;
 }
 
-.css_button {
-    background: transparent url( '../../images/bg_button_a.gif' ) no-repeat scroll top right;
+.css_button, a[role="button"] {
+    background: transparent url( 'theme_assets/bg_button_a.gif' ) no-repeat scroll top right;
     color: #444;
     display: block;
     float: left;
@@ -633,9 +646,11 @@ font-weight: bold;
     padding-right: 10px; /* sliding doors padding */
     text-decoration: none;
 }
-
+.css_button[href*="deleter"], input[type="button"][href*="deleter"], button[href*="deleter"], input[type="button"][class="deleter"], button[href*="deleter"], a[class="deleter"] {
+  background: red !important;
+}
 .css_button span {
-    background: transparent url( '../../images/bg_button_span.gif' ) no-repeat;
+    background: transparent url( 'theme_assets/bg_button_span.gif' ) no-repeat;
     display: block;
     line-height: 14px;
     padding: 5px 0 5px 10px;
@@ -645,7 +660,7 @@ float:left;
 }
 
 .disabled_button {
-	color: grey;
+    color: grey;
 
 }
 
@@ -660,13 +675,13 @@ a.disabled_button:hover {
 ul.tabNav { margin: 0; padding: 0; }
 ul.tabNav { float: left; list-style: none; width: 100%; }
 ul.tabNav li { float: left; margin: 0 1px 0 0; padding: 6px 0 0;
-	font-size: 0.8em;
+    font-size: 0.8em;
     vertical-align: bottom;
     text-align: left;
 }
 ul.tabNav li.current { padding-top: 0;
-	font-weight: bold;
-	font-size: 0.8em;
+    font-weight: bold;
+    font-size: 0.8em;
     vertical-align: bottom;
     text-align: left;
 }
@@ -676,20 +691,20 @@ ul.tabNav li.current a { background:#FFFFFF ;padding: 8px; }
 div.tabContainer { clear: both; float: left; width: 100%; }
 div.tabContainer div.tab { border: 1px solid #ffffff; color: #000; display: none; padding: 10px; }
 div.tabContainer div.current { display: block; }
-div.tab { 	min-height: 180px; background: #ffffff none repeat scroll 0 0; margin-bottom: 10px;width:665px;}
-div.tab_long { 	min-height: 180px; background: #ffffff none repeat scroll 0 0; margin-bottom: 10px;width:100%;}
+div.tab {   min-height: 180px; background: #ffffff none repeat scroll 0 0; margin-bottom: 10px;width:665px;}
+div.tab_long {  min-height: 180px; background: #ffffff none repeat scroll 0 0; margin-bottom: 10px;width:100%;}
 div.tab p:last-child { margin-bottom: 0; }
 
 div.tab table td {
-	padding-right: 1px; padding-bottom: 0px
+    padding-right: 1px; padding-bottom: 0px
 }
 
 div.tab table td.label {
-	min-width:80px;
+    min-width:80px;
 }
 
 div.tab table td.data {
-	min-width:120px; /*170px*/
+    min-width:120px; /*170px*/
 }
 
 div.notab {
@@ -701,15 +716,15 @@ div.notab-right {
 }
 
 .section-header {
-	margin-bottom:5px; width:685px; border-bottom: 1px solid;
+    margin-bottom:5px; width:685px; border-bottom: 1px solid;
 }
 
 .section-header-dynamic {
-	margin-bottom:5px; border-bottom: 1px solid;
+    margin-bottom:5px; border-bottom: 1px solid;
 }
 
 .summary_item {
-	 background:#FFFFFF; padding:8px;
+     background:#FFFFFF; padding:8px;
 }
 
 /*
@@ -718,12 +733,12 @@ div.notab-right {
 
 #report_parameters {
     background-color: #ececec;
-	margin-top:10px;
+    margin-top:10px;
 }
 
 #report_parameters table {
     border: solid 1px;
-	width: 100%;
+    width: 100%;
     border-collapse: collapse;
 }
 #report_parameters table td {
@@ -733,11 +748,11 @@ div.notab-right {
 #report_parameters table table {
     border: 0px;
     border-collapse: collapse;
-	font-size: 0.8em;
+    font-size: 0.8em;
 }
 
 #report_parameters table table td.label {
-	text-align: right;
+    text-align: right;
 }
 
 #report_results table {
@@ -753,18 +768,18 @@ div.notab-right {
     padding: 5px;
     display: table-header-group;
     background-color: #ddd;
-	text-align:left;
-	font-weight: bold;
-	font-size: 0.7em;
+    text-align:left;
+    font-weight: bold;
+    font-size: 0.7em;
 }
 #report_results table th {
     border-bottom: 1px solid black;
-	padding: 5px;
+    padding: 5px;
 }
 #report_results table td {
-	padding: 5px;
+    padding: 5px;
     border-bottom: 1px dashed;
-	font-size: 0.8em;
+    font-size: 0.8em;
 }
 .report_totals td {
     background-color: #77ff77;
@@ -804,13 +819,13 @@ font-size:9pt;
 * Drug lookup
 **/
 .drug_lookup{
-	font-family: helvetica;
-	font-size: 8pt;
-	border: 2px outset rgb(102, 102, 102);
-	background-color: #eae6ff;
-	padding: 5px;
-	position: absolute;
-	display: block;
+    font-family: helvetica;
+    font-size: 8pt;
+    border: 2px outset rgb(102, 102, 102);
+    background-color: #eae6ff;
+    padding: 5px;
+    position: absolute;
+    display: block;
 }
 
 /* Password alert styles */
@@ -845,18 +860,18 @@ font-size:9pt;
 /* Style for red font */
 
 .de_identification_status_message{
-	width: 50%;
-	border:1px solid #0000FF;
+    width: 50%;
+    border:1px solid #0000FF;
 }
 
 .de_identification_input_controls_box{
-	width: 100%;
-	border:1px solid #0000FF;
+    width: 100%;
+    border:1px solid #0000FF;
 }
 
 .de_id_upgrade_login{
-	width: 40%;
-	border:1px solid Black;
+    width: 40%;
+    border:1px solid Black;
         background-color:#ffffff;
 }
 
@@ -908,9 +923,9 @@ font-size:9pt;
 }
 
 #sddm li
-{	margin: 0;
-	padding: 0;
-	list-style: none;
+{   margin: 0;
+    padding: 0;
+    list-style: none;
         float:left;
         border: 1px solid #EAE6FF;
         background: #999; /* for non-css3 browsers */
@@ -920,13 +935,13 @@ font-size:9pt;
 }
 
 #sddm li a
-{	display: block;
-	margin: 0 1px 0 0;
-	padding: 4px 10px;
-	color: #004080;
-	text-align:left;
-	text-decoration: none;
-	font-size: 0.8em;
+{   display: block;
+    margin: 0 1px 0 0;
+    padding: 4px 10px;
+    color: #004080;
+    text-align:left;
+    text-decoration: none;
+    font-size: 0.8em;
         font-weight:bold;
 }
 
@@ -969,39 +984,6 @@ font-size:9pt;
     background: #8ca3ee;
     color: #000000;
 }
-.text-area{
-  background-color:#FFFFFF;
-  border:1px solid black;
-  width:100%;
-  height:100px;
-  overflow:auto;
-  text-align:left;
-}
-
-.expand_all,
-.collapse_all {
-	cursor: pointer;
-}
-
-#menu1 li, #menu2 li, #menu3 li, #menu4 li, #menu5 li {
-	background-image: none;
-	margin: 0;
-	padding: 0;
-	border-bottom:1px solid white;
-}
-
-#menu1 li.footer, #menu2 li.footer, #menu3 li.footer, #menu4 li.footer, #menu5 li.footer{
-	background: transparent url('footer.jpg') no-repeat 0 0;
-	border-top: 2px solid #fff;
-	height: 9px;
-	line-height: 15px;
-	margin: 0 0 10px 0;
-	width: 131px;
-}
-
-.cke_contents {
-height: 300px !important;
-}
 
 /* Form styles */
 .formtable {
@@ -1012,6 +994,9 @@ height: 300px !important;
         line-height: 24px;
     }
 .report_search_bar{
-	background-color:#C9DCFF;
+    background-color:#C9DCFF;
 }
 
+.iziModal.isFullscreen .iziModal-iframe {
+  height: 100% !important;
+}

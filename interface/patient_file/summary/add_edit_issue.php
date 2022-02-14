@@ -9,7 +9,7 @@
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
  *
- * @package LibreEHR
+ * @package Librehealth EHR
  * @author  Rod Roark <rod@sunsetsystems.com>
  * @link    http://librehealth.io
  */
@@ -34,6 +34,9 @@ require_once($GLOBALS['srcdir'].'/formdata.inc.php');
 ?>
 <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>
 <?php
+require_once($GLOBALS['srcdir']."/formatting.inc.php");
+$DateFormat = DateFormatRead();
+$DateLocale = getLocaleCodeForDisplayLanguage($GLOBALS['language_default']);
 
 if (isset($ISSUE_TYPES['football_injury'])) {
   if ($ISSUE_TYPES['football_injury']) {
@@ -265,8 +268,8 @@ if ($_POST['form_save']) {
     "type = '"        . add_escape_custom($text_type)                  . "', " .
     "title = '"       . add_escape_custom($_POST['form_title'])        . "', " .
     "comments = '"    . add_escape_custom($_POST['form_comments'])     . "', " .
-    "begdate = "      . QuotedOrNull($form_begin)   . ", "  .
-    "enddate = "      . QuotedOrNull($form_end)     . ", "  .
+    "begdate = "      . QuotedOrNull(prepareDateBeforeSave($form_begin)) . ", "  .
+    "enddate = "      . QuotedOrNull(prepareDateBeforeSave($form_end))    . ", "  .
     "returndate = "   . QuotedOrNull($form_return)  . ", "  .
     "diagnosis = '"   . add_escape_custom($_POST['form_diagnosis'])    . "', " .
     "occurrence = '"  . add_escape_custom($_POST['form_occur'])        . "', " .
@@ -305,8 +308,8 @@ if ($_POST['form_save']) {
     "'" . add_escape_custom($_POST['form_title'])       . "', " .
     "1, "                            .
     "'" . add_escape_custom($_POST['form_comments'])    . "', " .
-    QuotedOrNull($form_begin)        . ", "  .
-    QuotedOrNull($form_end)        . ", "  .
+    QuotedOrNull(prepareDateBeforeSave($form_begin))       . ", "  .
+    QuotedOrNull(prepareDateBeforeSave($form_end))     . ", "  .
     QuotedOrNull($form_return)       . ", "  .
     "'" . add_escape_custom($_POST['form_diagnosis'])   . "', " .
     "'" . add_escape_custom($_POST['form_occur'])       . "', " .
@@ -345,16 +348,15 @@ if ($_POST['form_save']) {
     substr($_POST['form_title'], 0, 40));
 
   // Close this window and redisplay the updated list of issues.
-  //
   echo "<html><body><script language='JavaScript'>\n";
   if ($info_msg) echo " alert('$info_msg');\n";
-
+//  echo "alert('successfully added new issue');\n";
   echo " var myboss = opener ? opener : parent;\n";
   echo " if (myboss.refreshIssue) myboss.refreshIssue($issue,'$tmp_title');\n";
   echo " else if (myboss.reloadIssues) myboss.reloadIssues();\n";
   echo " else myboss.location.reload();\n";
   echo " if (parent.$ && parent.$.fancybox) parent.$.fancybox.close();\n";
-  echo " else window.close();\n";
+  echo " else {window.close();window.setTimeout(function(){parent.$.fn.fancybox.close();},100);}\n";
 
   echo "</script></body></html>\n";
   exit();
@@ -398,16 +400,15 @@ div.section {
 
 </style>
 
-<style type="text/css">@import url(<?php echo $GLOBALS['webroot']; ?>/library/dynarch_calendar.css);</style>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/library/dynarch_calendar.js"></script>
-<?php require_once($GLOBALS['srcdir'].'/dynarch_calendar_en.inc.php'); ?>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/library/dynarch_calendar_setup.js"></script>
+<link rel="stylesheet" href="../../../library/css/jquery.datetimepicker.css">
+
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/library/textformat.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/library/dialog.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/library/js/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="../../../library/js/jquery.datetimepicker.full.min.js"></script>
 
 <script language="JavaScript">
 
- var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';
 
  var aitypes = new Array(); // issue type attributes
  var aopts   = new Array(); // Option objects
@@ -551,7 +552,6 @@ ActiveIssueCodeRecycleFn($thispid, $ISSUE_TYPES);
    var today = new Date();
    f.form_end.value = '' + (today.getYear() + 1900) + '-' +
     ("0" + (today.getMonth() + 1)).slice(-2) + '-' + ("0" + today.getDate()).slice(-2);
-   f.form_end.focus();
   }
  }
 
@@ -624,197 +624,217 @@ function divclick(cb, divid) {
 
 <body class="body_top" style="padding-right:0.5em">
 
-<form method='post' name='theform'
- action='add_edit_issue.php?issue=<?php echo attr($issue); ?>&thispid=<?php echo attr($thispid); ?>&thisenc=<?php echo attr($thisenc); ?>'
- onsubmit='return validate()'>
+<form
+  method='post'
+  name='theform'
+  action='add_edit_issue.php?issue=<?php echo attr($issue); ?>&thispid=<?php echo attr($thispid); ?>&thisenc=<?php echo attr($thisenc); ?>'
+  onsubmit='return validate()'
+>
 
 <table border='0' width='100%'>
-
- <tr>
-  <td valign='top' width='1%' nowrap><b><?php echo xlt('Type'); ?>:</b></td>
-  <td>
-<?php
- $index = 0;
- foreach ($ISSUE_TYPES as $value) {
-  if ($issue || $thistype) {
-    if ($index == $type_index) {
-      echo text($value[1]);
-      echo "<input type='hidden' name='form_type' value='".attr($index)."'>\n";
-    }
-  } else {
-    echo "   <input type='radio' name='form_type' value='".attr($index)."' onclick='newtype($index)'";
-    if ($index == $type_index) echo " checked";
-    echo " />" . text($value[1]) . "&nbsp;\n";
-  }
-  ++$index;
- }
-?>
-  </td>
- </tr>
-
- <tr id='row_titles'>
-  <td valign='top' nowrap>&nbsp;</td>
-  <td valign='top'>
-   <select name='form_titles' size='4' onchange='set_text()'>
-   </select> <?php echo xlt('(Select one of these, or type your own title)'); ?>
-  </td>
- </tr>
-
- <tr>
-  <td valign='top' id='title_diagnosis' nowrap><b><?php echo xlt('Title'); ?>:</b></td>
-  <td>
-   <input type='text' size='40' name='form_title' value='<?php echo attr($irow['title']) ?>' style='width:100%' />
-  </td>
- </tr>
-
- <tr id='row_codeSelect2'>
- <td><b><?php echo xlt('Active Issue Codes'); ?>:</b>
- </td>
- <td>
-  <select name='form_codeSelect2' size='4' onchange="codeBoxFunction2()" style="max-width:100%;">
-  </select>
- </td>
- </tr>
-
- <tr id='row_diagnosis'>
-  <td valign='top' nowrap><b><?php echo xlt('Coding'); ?>:</b></td>
-  <td>
-   <input type='text' size='50' name='form_diagnosis'
-    value='<?php echo attr($irow['diagnosis']) ?>' onclick='sel_diagnosis()'
-    title='<?php echo xla('Click to select or change coding'); ?>'
-    style='width:100%' readonly />
-  </td>
- </tr>
-
- <tr>
-  <td valign='top' nowrap><b><?php echo xlt('Begin Date'); ?>:</b></td>
-  <td>
-
-   <input type='text' size='10' name='form_begin' id='form_begin'
-    value='<?php echo attr($irow['begdate']) ?>'
-    onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)'
-    title='<?php echo xla('yyyy-mm-dd date of onset, surgery or start of medication'); ?>' />
-   <img src='../../pic/show_calendar.gif' align='absbottom' width='24' height='22'
-    id='img_begin' border='0' alt='[?]' style='cursor:pointer'
-    title='<?php echo xla('Click here to choose a date'); ?>' />
-  </td>
- </tr>
-
- <tr id='row_enddate'>
-  <td valign='top' nowrap><b><?php echo xlt('End Date'); ?>:</b></td>
-  <td>
-   <input type='text' size='10' name='form_end' id='form_end'
-    value='<?php echo attr($irow['enddate']) ?>'
-    onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)'
-    title='<?php echo xla('yyyy-mm-dd date of recovery or end of medication'); ?>' />
-   <img src='../../pic/show_calendar.gif' align='absbottom' width='24' height='22'
-    id='img_end' border='0' alt='[?]' style='cursor:pointer'
-    title='<?php echo xla('Click here to choose a date'); ?>' />
-    &nbsp;(<?php echo xlt('leave blank if still active'); ?>)
-  </td>
- </tr>
-
- <tr id='row_active'>
-  <td valign='top' nowrap><b><?php echo xlt('Active'); ?>:</b></td>
-  <td>
-   <input type='checkbox' name='form_active' value='1' <?php echo attr($irow['enddate']) ? "" : "checked"; ?>
-    onclick='activeClicked(this);'
-    title='<?php echo xla('Indicates if this issue is currently active'); ?>' />
-  </td>
- </tr>
-
- <tr id='row_returndate'>
-   <td>
-   <input type='hidden'  name='form_return' id='form_return' />
-   <input type='hidden'  name='row_reinjury_id' id='row_reinjury_id' />
-  <img  
-    id='img_return'/>
-  </td>
- </tr>
- 
- <tr id='row_occurrence'>
-  <td valign='top' nowrap><b><?php echo xlt('Occurrence'); ?>:</b></td>
-  <td>
-   <?php
-    // Modified 6/2009 by BM to incorporate the occurrence items into the list_options listings
-    generate_form_field(array('data_type'=>1,'field_id'=>'occur','list_id'=>'occurrence','empty_title'=>'SKIP'), $irow['occurrence']);
-   ?>
-  </td>
- </tr>
-
- <tr id='row_classification'>
-  <td valign='top' nowrap><b><?php echo xlt('Classification'); ?>:</b></td>
-  <td>
-   <select name='form_classification'>
-<?php
- foreach ($ISSUE_CLASSIFICATIONS as $key => $value) {
-  echo "   <option value='".attr($key)."'";
-  if ($key == $irow['classification']) echo " selected";
-  echo ">".text($value)."\n";
- }
-?>
-   </select>
-  </td>
- </tr>
-
- <!-- Reaction For Medication Allergy -->
-  <tr id='row_severity'>
-    <td valign='top' nowrap><b><?php echo xlt('Severity'); ?>:</b></td>
-    <td><?php
-        $severity=$irow['severity_al'];
-        generate_form_field(array('data_type'=>1,'field_id'=>'severity_id','list_id'=>'severity_ccda','empty_title'=>'SKIP'), $severity);
-      ?>  
+  <tr>
+    <td valign='top' width='1%' nowrap><b><?php echo xlt('Type'); ?>:</b></td>
+    <td>
+      <?php
+        $index = 0;
+        foreach ($ISSUE_TYPES as $value) {
+          if ($issue || $thistype) {
+            if ($index == $type_index) {
+              echo text($value[1]);
+              echo "<input type='hidden' name='form_type' value='".attr($index)."'>\n";
+            }
+          } else {
+              echo "   <input type='radio' name='form_type' value='".attr($index)."' onclick='newtype($index)'";
+              if ($index == $type_index) echo " checked";
+                echo " />" . text($value[1]) . "&nbsp;\n";
+          }
+          ++$index;
+        }
+      ?>
     </td>
   </tr>
-  <tr id='row_reaction'>
-   <td valign='top' nowrap><b><?php echo xlt('Reaction'); ?>:</b></td>
-   <td>
-     <?php
-        echo generate_select_list('form_reaction', 'reaction', $irow['reaction'], '', '', '', '');
-     ?>
-   </td>
+
+  <tr id='row_titles'>
+    <td valign='top' nowrap>&nbsp;</td>
+    <td valign='top'>
+      <select name='form_titles' size='4' onchange='set_text()'></select>
+      <?php echo xlt('(Select one of these, or type your own title)'); ?>
+    </td>
   </tr>
- <!-- End of reaction -->
 
- <tr id='row_referredby'>
-  <td valign='top' nowrap><b><?php echo xlt('Referred by'); ?>:</b></td>
-  <td>
-   <input type='text' size='40' name='form_referredby' value='<?php echo attr($irow['referredby']) ?>'
-    style='width:100%' title='<?php echo xla('Referring physician and practice'); ?>' />
-  </td>
- </tr>
+  <tr>
+    <td valign='top' id='title_diagnosis' nowrap><b><?php echo xlt('Title'); ?>:</b></td>
+    <td>
+      <input
+        type='text'
+        size='40'
+        name='form_title'
+        value='<?php echo attr($irow['title']) ?>'
+        style='width:100%'
+      />
+    </td>
+  </tr>
 
- <tr id='row_comments'>
-  <td valign='top' nowrap><b><?php echo xlt('Comments'); ?>:</b></td>
-  <td>
-   <textarea name='form_comments' rows='4' cols='40' wrap='virtual' style='width:100%'><?php echo text($irow['comments']) ?></textarea>
-  </td>
- </tr>
+  <tr id='row_codeSelect2'>
+    <td><b><?php echo xlt('Active Issue Codes'); ?>:</b></td>
+    <td>
+      <select name='form_codeSelect2' size='4' onchange="codeBoxFunction2()" style="max-width:100%;"></select>
+    </td>
+  </tr>
 
- <tr<?php if ($GLOBALS['ippf_specific']) echo " style='display:none;'"; ?>>
-  <td valign='top' nowrap><b><?php echo xlt('Outcome'); ?>:</b></td>
-  <td>
-   <?php
-    echo generate_select_list('form_outcome', 'outcome', $irow['outcome'], '', '', '', 'outcomeClicked(this);');
-   ?>
-  </td>
- </tr>
+  <tr id='row_diagnosis'>
+    <td valign='top' nowrap><b><?php echo xlt('Coding'); ?>:</b></td>
+    <td>
+      <input
+        type='text'
+        size='50'
+        name='form_diagnosis'
+        value='<?php echo attr($irow['diagnosis']) ?>' onclick='sel_diagnosis()'
+        title='<?php echo xla('Click to select or change coding'); ?>'
+        style='width:100%'
+        readonly
+      />
+    </td>
+  </tr>
 
- <tr<?php if ($GLOBALS['ippf_specific']) echo " style='display:none;'"; ?>>
-  <td valign='top' nowrap><b><?php echo xlt('Destination'); ?>:</b></td>
-  <td>
-<?php if (true) { ?>
-   <input type='text' size='40' name='form_destination' value='<?php echo attr($irow['destination']) ?>'
-    style='width:100%' title='GP, Secondary care specialist, etc.' />
-<?php } else { // leave this here for now, please -- Rod ?>
-   <?php echo rbinput('form_destination', '1', 'GP'                 , 'destination') ?>&nbsp;
-   <?php echo rbinput('form_destination', '2', 'Secondary care spec', 'destination') ?>&nbsp;
-   <?php echo rbinput('form_destination', '3', 'GP via physio'      , 'destination') ?>&nbsp;
-   <?php echo rbinput('form_destination', '4', 'GP via podiatry'    , 'destination') ?>
-<?php } ?>
-  </td>
- </tr>
+  <tr>
+    <td valign='top' nowrap><b><?php echo xlt('Begin Date'); ?>:</b></td>
+    <td>
+      <input
+        type='text'
+        size='10'
+        name='form_begin'
+        id='form_begin'
+        value='<?php echo htmlspecialchars(oeFormatShortDate(attr($irow['begdate']))) ?>'
+        title='<?php echo xla('yyyy-mm-dd date of onset, surgery or start of medication'); ?>'
+      />
+    </td>
+  </tr>
 
+  <tr id='row_enddate'>
+    <td valign='top' nowrap><b><?php echo xlt('End Date'); ?>:</b></td>
+    <td>
+      <input
+        type='text'
+        size='10'
+        name='form_end'
+        id='form_end'
+        value='<?php echo htmlspecialchars(oeFormatShortDate(attr($irow['enddate']))) ?>'
+        title='<?php echo xla('yyyy-mm-dd date of recovery or end of medication'); ?>'
+      />
+      &nbsp;(<?php echo xlt('leave blank if still active'); ?>)
+    </td>
+  </tr>
+
+  <tr id='row_active'>
+    <td valign='top' nowrap><b><?php echo xlt('Active'); ?>:</b></td>
+    <td>
+      <input
+        type='checkbox'
+        name='form_active'
+        value='1'
+        <?php echo attr($irow['enddate']) ? "" : "checked"; ?>
+        onclick='activeClicked(this);'
+        title='<?php echo xla('Indicates if this issue is currently active'); ?>'
+      />
+    </td>
+  </tr>
+
+  <tr id='row_occurrence'>
+    <td valign='top' nowrap><b><?php echo xlt('Occurrence'); ?>:</b></td>
+    <td>
+      <?php
+        // Modified 6/2009 by BM to incorporate the occurrence items into the list_options listings
+        generate_form_field(array('data_type'=>1,'field_id'=>'occur','list_id'=>'occurrence','empty_title'=>'SKIP'), $irow['occurrence']);
+      ?>
+    </td>
+  </tr>
+
+  <tr id='row_classification'>
+    <td valign='top' nowrap><b><?php echo xlt('Classification'); ?>:</b></td>
+    <td>
+      <select name='form_classification'>
+        <?php
+          foreach ($ISSUE_CLASSIFICATIONS as $key => $value) {
+            echo "   <option value='".attr($key)."'";
+            if ($key == $irow['classification']) echo " selected";
+              echo ">".text($value)."\n";
+          }
+        ?>
+      </select>
+    </td>
+  </tr>
+
+  <!-- Reaction For Medication Allergy -->
+  <tr id='row_severity'>
+    <td valign='top' nowrap><b><?php echo xlt('Severity'); ?>:</b></td>
+    <td>
+      <?php
+        $severity=$irow['severity_al'];
+        generate_form_field(array('data_type'=>1,'field_id'=>'severity_id','list_id'=>'severity_ccda','empty_title'=>'SKIP'), $severity);
+      ?>
+    </td>
+  </tr>
+
+  <tr id='row_reaction'>
+    <td valign='top' nowrap><b><?php echo xlt('Reaction'); ?>:</b></td>
+    <td>
+      <?php
+        echo generate_select_list('form_reaction', 'reaction', $irow['reaction'], '', '', '', '');
+      ?>
+    </td>
+  </tr>
+
+  <!-- End of reaction -->
+  <tr id='row_referredby'>
+    <td valign='top' nowrap><b><?php echo xlt('Referred by'); ?>:</b></td>
+    <td>
+      <input
+        type='text'
+        size='40'
+        name='form_referredby'
+        value='<?php echo attr($irow['referredby']) ?>'
+        style='width:100%'
+        title='<?php echo xla('Referring physician and practice'); ?>'
+      />
+    </td>
+  </tr>
+
+  <tr id='row_comments'>
+    <td valign='top' nowrap><b><?php echo xlt('Comments'); ?>:</b></td>
+    <td>
+      <textarea name='form_comments' rows='4' cols='40' wrap='virtual' style='width:100%'><?php echo text($irow['comments']) ?></textarea>
+    </td>
+  </tr>
+
+   <tr<?php if ($GLOBALS['ippf_specific']) echo " style='display:none;'"; ?>>
+    <td valign='top' nowrap><b><?php echo xlt('Outcome'); ?>:</b></td>
+    <td>
+      <?php
+        echo generate_select_list('form_outcome', 'outcome', $irow['outcome'], '', '', '', 'outcomeClicked(this);');
+      ?>
+    </td>
+   </tr>
+
+  <tr<?php if ($GLOBALS['ippf_specific']) echo " style='display:none;'"; ?>>
+    <td valign='top' nowrap><b><?php echo xlt('Destination'); ?>:</b></td>
+    <td>
+      <?php if (true) { ?>
+        <input
+          type='text'
+          size='40'
+          name='form_destination'
+          value='<?php echo attr($irow['destination']) ?>'
+          style='width:100%' title='GP, Secondary care specialist, etc.'
+        />
+      <?php } else { // leave this here for now, please -- Rod ?>
+        <?php echo rbinput('form_destination', '1', 'GP'                 , 'destination') ?>&nbsp;
+        <?php echo rbinput('form_destination', '2', 'Secondary care spec', 'destination') ?>&nbsp;
+        <?php echo rbinput('form_destination', '3', 'GP via physio'      , 'destination') ?>&nbsp;
+        <?php echo rbinput('form_destination', '4', 'GP via podiatry'    , 'destination') ?>
+      <?php } ?>
+    </td>
+  </tr>
 </table>
 
 <?php
@@ -845,9 +865,18 @@ function divclick(cb, divid) {
 </form>
 <script language='JavaScript'>
  newtype(<?php echo $type_index ?>);
- Calendar.setup({inputField:"form_begin", ifFormat:"%Y-%m-%d", button:"img_begin"});
- Calendar.setup({inputField:"form_end", ifFormat:"%Y-%m-%d", button:"img_end"});
- Calendar.setup({inputField:"form_return", ifFormat:"%Y-%m-%d", button:"img_return"});
 </script>
+
+<script>
+    $(function() {
+        $("#form_begin, #form_end").datetimepicker({
+            timepicker: false,
+            format: "<?= $DateFormat; ?>"
+        });
+        $.datetimepicker.setLocale('<?= $DateLocale;?>');
+    });
+</script>
+
+
 </body>
 </html>

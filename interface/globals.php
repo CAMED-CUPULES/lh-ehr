@@ -5,7 +5,7 @@
  *
  * @copyright Copyright (C) 2016 Terry Hill <teryhill@librehealth.io>
  *
- * No header existed on this file so no other copyright information 
+ * No header existed on this file so no other copyright information
  *
  * LICENSE: This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,15 +22,28 @@
  * See the Mozilla Public License for more details.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author Terry Hill <teryhill@librehealth.io>
  * No other authors mentioned in the previous header file.
- * @link http://www.libreehr.org
+ * @link http://librehealth.io
  *
- * Please help the overall project by sending changes you make to the author and to the LibreEHR community.
+ * Please help the overall project by sending changes you make to the author and to the LibreHealth EHR community.
  *
  */
- 
+
+// Default values for optional variables that are allowed to be set by callers.
+
+// Unless specified explicitly, apply Auth functions
+if (!isset($ignoreAuth)) {
+    $ignoreAuth = false;
+}
+// Same for onsite
+if (!isset($ignoreAuth_onsite_portal)) {
+    $ignoreAuth_onsite_portal = false;
+}
+
+
+
 // Is this windows or non-windows? Create a boolean definition.
 if (!defined('IS_WINDOWS'))
  define('IS_WINDOWS', (stripos(PHP_OS,'WIN') === 0));
@@ -69,11 +82,11 @@ if (isset($sanitize_all_escapes) && $sanitize_all_escapes) {
 //
 // The webserver_root and web_root are now automatically collected.
 // If not working, can set manually below.
-// Auto collect the full absolute directory path for libreehr.
+// Auto collect the full absolute directory path for LibreHealth EHR.
 $webserver_root = dirname(dirname(__FILE__));
 if (IS_WINDOWS) {
  //convert windows path separators
- $webserver_root = str_replace("\\","/",$webserver_root); 
+ $webserver_root = str_replace("\\","/",$webserver_root);
 }
 // Collect the apache server document root (and convert to windows slashes, if needed)
 $server_document_root = realpath($_SERVER['DOCUMENT_ROOT']);
@@ -82,7 +95,7 @@ if (IS_WINDOWS) {
  $server_document_root = str_replace("\\","/",$server_document_root);
 }
 // Auto collect the relative html path, i.e. what you would type into the web
-// browser after the server address to get to LibreEHR.
+// browser after the server address to get to LibreHealth EHR.
 // This removes the leading portion of $webserver_root that it has in common with the web server's document
 // root and assigns the result to $web_root. In addition to the common case where $webserver_root is
 // /var/www/libreehr and document root is /var/www, this also handles the case where document root is
@@ -106,8 +119,8 @@ $GLOBALS['OE_SITES_BASE'] = "$webserver_root/sites";
 // The session name names a cookie stored in the browser.
 // Now that restore_session() is implemented in javaScript, session IDs are
 // effectively saved in the top level browser window and there is no longer
-// any need to change the session name for different LibreEHR instances.
-session_name("LibreEHR");
+// any need to change the session name for different LibreHealth EHR instances.
+session_name("LibreHealthEHR");
 
 session_start();
 
@@ -118,21 +131,24 @@ if (empty($_SESSION['site_id']) || !empty($_GET['site'])) {
     $tmp = $_GET['site'];
   }
   else {
-    if (!$ignoreAuth) die("Site ID is missing from session data!");
+    if (empty($ignoreAuth)) {
+        header('Location: login/login.php?loginfirst&site='.$tmp);
+        die();
+    }
     $tmp = $_SERVER['HTTP_HOST'];
     if (!is_dir($GLOBALS['OE_SITES_BASE'] . "/$tmp")) $tmp = "default";
   }
   if (empty($tmp) || preg_match('/[^A-Za-z0-9\\-.]/', $tmp))
     die("Site ID '". htmlspecialchars($tmp,ENT_NOQUOTES) . "' contains invalid characters.");
   if (isset($_SESSION['site_id']) && ($_SESSION['site_id'] != $tmp)) {
-    // This is to prevent using session to penetrate other LibreEHR instances within same multisite module
+    // This is to prevent using session to penetrate other LibreHealth EHR instances within same multisite module
     session_unset(); // clear session, clean logout
     if (isset($landingpage) && !empty($landingpage)) {
-      // LibreEHR Patient Portal use
+      // LibreHealth EHR Patient Portal use
       header('Location: index.php?site='.$tmp);
     }
     else {
-      // Main LibreEHR use
+      // Main LibreHealth EHR use
       header('Location: ../login/login.php?site='.$tmp); // Assuming in the interface/main directory
     }
     exit;
@@ -151,8 +167,9 @@ require_once($GLOBALS['OE_SITE_DIR'] . "/config.php");
 // Collecting the utf8 disable flag from the sqlconf.php file in order
 // to set the correct html encoding. utf8 vs iso-8859-1. If flag is set
 // then set to iso-8859-1.
+//THIS NEEDS TO BE IMPROVED!!!
 require_once(dirname(__FILE__) . "/../library/sqlconf.php");
-if (!$disable_utf8_flag) {    
+if (!$disable_utf8_flag) {
  ini_set('default_charset', 'utf-8');
  $HTML_CHARSET = "UTF-8";
  mb_internal_encoding('UTF-8');
@@ -172,19 +189,45 @@ $GLOBALS['srcdir'] = "$webserver_root/library";
 $GLOBALS['fileroot'] = "$webserver_root";
 // Absolute path to the location of interface directory for use with include statements:
 $include_root = "$webserver_root/interface";
-// Absolute path to the location of documentroot directory for use with include statements:
+// Absolute path to the location of document root directory for use with include statements:
 $GLOBALS['webroot'] = $web_root;
+$GLOBALS['assets'] = "$web_root/assets";// assets directory
+
+$GLOBALS['standard_js_path'] = "$web_root/assets/js/";
+$javascript_dir = $GLOBALS['standard_js_path']; //Make path available as a variable.
+$GLOBALS['current_version_js_path'] = "$web_root/assets/js/current_version";
+
+//module configurations
+$GLOBALS['modules_dir']  = "$webroot/modules/";        //CURRENT modules directory.
+$modules_dir = $GLOBALS['modules_dir'];                //Make path available as a variable.
+$GLOBALS['baseModDir']  = "interface/modules/";        //base directory for the ZEND mods.  Not currently used.
+$GLOBALS['customModDir']= "custom_modules";            //OLD non zend modules, not used.
+$GLOBALS['zendModDir']  = "zend_modules";              //zend module sub-directory, not used.
+$GLOBALS['mod_nn'] = 0;                                //Nation Notes Module value off by default.
+//module config TODO:  module and global registry for same.
+
+// images directory
+$GLOBALS['images_path'] = "$web_root/assets/images/";
+
+//patient portal images directory
+$GLOBALS['portal_images_path'] = "$web_root/patient_portal/images/";
+
+// css directory
+$GLOBALS['css_path'] = "$web_root/assets/css/";
+
+// font directory
+$GLOBALS['fonts_path'] = "$web_root/assets/fonts/";
 
 $GLOBALS['template_dir'] = $GLOBALS['fileroot'] . "/templates/";
 $GLOBALS['incdir'] = $include_root;
 // Location of the login screen file
 $GLOBALS['login_screen'] = $GLOBALS['rootdir'] . "/login_screen.php";
 
-// Variable set for Eligibility Verification [EDI-271] path 
+// Variable set for Eligibility Verification [EDI-271] path
 $GLOBALS['edi_271_file_path'] = $GLOBALS['OE_SITE_DIR'] . "/edi/";
 
 // Include the translation engine. This will also call sql.inc to
-//  open the libreehr mysql connection.
+//  open the LibreHealth EHR mysql connection.
 include_once (dirname(__FILE__) . "/../library/translation.inc.php");
 
 // Include convenience functions with shorter names than "htmlspecialchars" (for security)
@@ -208,7 +251,7 @@ $GLOBALS['cene_specific'] = false;
 $GLOBALS['inhouse_pharmacy'] = false;
 $GLOBALS['sell_non_drug_products'] = 0;
 
-#Use this to turn on and off the development mode 
+#Use this to turn on and off the development mode
 #mainly to keep left_nave untill it is dumped
 $GLOBALS['development_flag'] = false;
 
@@ -234,7 +277,7 @@ if (!empty($glrow)) {
   $GLOBALS['language_menu_show'] = array();
   $glres = sqlStatement("SELECT gl_name, gl_index, gl_value FROM globals " .
     "ORDER BY gl_name, gl_index");
-  while ($glrow = sqlFetchArray($glres)) {    
+  while ($glrow = sqlFetchArray($glres)) {
     $gl_name  = $glrow['gl_name'];
     $gl_value = $glrow['gl_value'];
     // Adjust for user specific settings
@@ -245,7 +288,7 @@ if (!empty($glrow)) {
         }
       }
     }
-    if ($gl_name == 'language_menu_other') {       
+    if ($gl_name == 'language_menu_other') {
       $GLOBALS['language_menu_show'][] = $gl_value;
     }
     else if ($gl_name == 'css_header') {
@@ -265,8 +308,8 @@ if (!empty($glrow)) {
       $GLOBALS[$gl_name] = $gl_value;
     }
   }
-  
-  # Put this here to default the globals entry for concurrent_layout while that code is being removed 
+
+  # Put this here to default the globals entry for concurrent_layout while that code is being removed
   $GLOBALS['concurrent_layout'] = 3;
 
   // Language cleanup stuff.
@@ -274,36 +317,46 @@ if (!empty($glrow)) {
   if ((count($GLOBALS['language_menu_show']) >= 1) || $GLOBALS['language_menu_showall']) {
     $GLOBALS['language_menu_login'] = true;
   }
-  
-  
+
+
 // Additional logic to override theme name.
 // For RTL languages we substitute the theme name with the name of RTL-adapted CSS file.
     $rtl_override = false;
     if( isset( $_SESSION['language_direction'] )) {
-        if( $_SESSION['language_direction'] == 'rtl' && 
+        if( $_SESSION['language_direction'] == 'rtl' &&
         !strpos($GLOBALS['css_header'], 'rtl')  ) {
 
             // the $css_header_value is set above
             $rtl_override = true;
         }
-    }     
-    
-    else { 
+    } elseif (isset($_SESSION['language_choice'])) {
+        //this will support the onsite patient portal which will have a language choice but not yet a set language direction
+        $_SESSION['language_direction'] = getLanguageDir($_SESSION['language_choice']);
+        if ( $_SESSION['language_direction'] == 'rtl' &&
+        !strpos($GLOBALS['css_header'], 'rtl')) {
+
+            // the $css_header_value is set above
+            $rtl_override = true;
+    }
+    }
+
+    else {
         //$_SESSION['language_direction'] is not set, so will use the default language
         $default_lang_id = sqlQuery('SELECT lang_id FROM lang_languages WHERE lang_description = ?',array($GLOBALS['language_default']));
-        
+
         if ( getLanguageDir( $default_lang_id['lang_id'] ) === 'rtl' && !strpos($GLOBALS['css_header'], 'rtl')) { // @todo eliminate 1 SQL query
             $rtl_override = true;
         }
     }
-    
+
 
     // change theme name, if the override file exists.
     if( $rtl_override ) {
         // the $css_header_value is set above
         $new_theme = 'rtl_' . $temp_css_theme_name;
 
-        // Check file existance 
+        // Check file existence
+
         if( file_exists( $include_root.'/themes/'.$new_theme ) ) {
             $GLOBALS['css_header'] = $rootdir.'/themes/'.$new_theme;
         } else {
@@ -313,7 +366,7 @@ if (!empty($glrow)) {
     }
     unset( $temp_css_theme_name, $new_theme,$rtl_override);
     // end of RTL section
-  
+
   //
   // End of globals table processing.
 }
@@ -343,7 +396,7 @@ else {
   $GLOBALS['disable_non_default_groups'] = true;
   $GLOBALS['ippf_specific'] = false;
   $GLOBALS['default_tab_1'] = "/interface/main/finder/dynamic_finder.php";
-  $GLOBALS['default_tab_2'] = "/interface/patient_tracker/patient_tracker.php?skip_timeout_reset=1";  
+  $GLOBALS['default_tab_2'] = "/interface/patient_tracker/patient_tracker.php?skip_timeout_reset=1";
 }
 
 // If >0 this will enforce a separate PHP session for each top-level
@@ -364,7 +417,7 @@ if ($GLOBALS['concurrent_layout']) {
 } else {
  $top_bg_line = ' bgcolor="#94d6e7" ';
  $GLOBALS['style']['BGCOLOR2'] = "#94d6e7";
- $bottom_bg_line = ' background="'.$rootdir.'/pic/aquabg.gif" ';
+ $bottom_bg_line = ' background="'.$rootdir.'/themes/theme_assets/aquabg.gif" ';
  $title_bg_line = ' bgcolor="#aaffff" ';
  $nav_bg_line = ' bgcolor="#94d6e7" ';
 }
@@ -409,9 +462,18 @@ $login_screen = $GLOBALS['login_screen'];
 $GLOBALS['css_header'] = $css_header;
 $GLOBALS['backpic'] = $backpic;
 
+//Portal Version tag
+require_once(dirname(__FILE__) . "/../portal_version.php");
+
+$libreehr_portal_version = "$p_major.$p_minor.$p_patch".$p_tag;
+
 // 1 = send email message to given id for Emergency Login user activation,
 // else 0.
 $GLOBALS['Emergency_Login_email'] = $GLOBALS['Emergency_Login_email_id'] ? 1 : 0;
+
+if (($ignoreAuth_onsite_portal === true) && ($GLOBALS['portal_onsite_enable'] == 1)) {
+    $ignoreAuth = true;
+}
 
 if (!isset($ignoreAuth) || !$ignoreAuth) {
   include_once("$srcdir/auth.inc");
@@ -425,10 +487,6 @@ $GLOBALS['layout_search_color'] = '#ffff55';
 $SMTP_Auth = !empty($GLOBALS['SMTP_USER']);
 
 
-//module configurations
-$GLOBALS['baseModDir'] 	= "interface/modules/"; //default path of modules
-$GLOBALS['customModDir']= "custom_modules";	//non zend modules
-$GLOBALS['zendModDir']	= "zend_modules";	//zend modules
 
 // Don't change anything below this line. ////////////////////////////
 
@@ -465,12 +523,12 @@ ini_set("session.bug_compat_warn","off");
 
 /* If the includer didn't specify, assume they want us to "fake" register_globals. */
 if (!isset($fake_register_globals)) {
-	$fake_register_globals = TRUE;
+    $fake_register_globals = TRUE;
 }
 
 /* Pages with "myadmin" in the URL don't need register_globals. */
 $fake_register_globals =
-	$fake_register_globals && (strpos($_SERVER['REQUEST_URI'],"myadmin") === FALSE);
+    $fake_register_globals && (strpos($_SERVER['REQUEST_URI'],"myadmin") === FALSE);
 
 
 // Emulates register_globals = On.  Moved to the bottom of globals.php to prevent
@@ -481,6 +539,16 @@ if ($fake_register_globals) {
   extract($_POST,EXTR_SKIP);
 }
 
-
 include_once __DIR__ . '/../library/pluginsystem/bootstrap.php';
+
+if ($GLOBALS['ehr_timezone'] !== '') {
+  // getting selected time zone option (from globals)
+  $timezone = $GLOBALS['ehr_timezone'];
+  if (strpos($timezone, '!') !== false) {
+    // removing '!' from timezone which is at 0th place in string
+    // which happens when default option is selected in time zone list in globals
+    $timezone = substr($timezone, strpos($timezone, '!') + 1);
+  }
+  ini_set('date.timezone', $timezone);  // sets timezone for function date() according to globals
+}
 ?>

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author  Rod Roark <rod@sunsetsystems.com>
  * @author  Brady Miller <brady@sparmy.com>
  * @author  Kevin Yeh <kevin.y@integralemr.com>
@@ -32,14 +32,21 @@ $sanitize_all_escapes = true;
 $ignoreAuth = true;
 include_once("../globals.php");
 include_once("$srcdir/sql.inc");
+
+include_once("$srcdir/headers.inc.php");
+
 ?>
 <html>
 <head>
-    <?php html_header_show(); ?>
+    <?php
+        html_header_show();
+        call_required_libraries(array('jquery-min-3-1-1'));
+    ?>
     <link rel=stylesheet href="<?php echo $css_header; ?>" type="text/css">
     <link rel=stylesheet href="../themes/login.css" type="text/css">
+    <link rel="shortcut icon" href="<?php echo $web_root; ?>/favicon.ico" type="image/x-icon">
+    <title>Login | <?php echo $GLOBALS['libreehr_name']; ?></title>
 
-    <script language='JavaScript' src="../../library/js/jquery-1.4.3.min.js"></script>
     <script language='JavaScript'>
         function transmit_form() {
             document.forms[0].submit();
@@ -150,6 +157,14 @@ include_once("$srcdir/sql.inc");
                                 </tr>
                             <?php endif; ?>
 
+                            <?php if (isset($_GET['loginfirst'])): ?>
+                                <tr>
+                                    <td colspan='2' class='text' style='color:red'>
+                                        <?php echo xlt('You have been logged out due to inactivity, or you have experienced an error. Please re-enter access credentials.'); ?>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+
                             <?php if (isset($_SESSION['relogin']) && ($_SESSION['relogin'] == 1)): ?>
                                 <tr>
                                     <td colspan='2' class='text'
@@ -160,17 +175,17 @@ include_once("$srcdir/sql.inc");
                                     </td>
                                 </tr>
                             <?php endif; ?>
-
+			    <!-- Fixing height and width of input box.-->
                             <tr>
-                                <td><span class="text"><?php echo xlt('Username:'); ?></span></td>
+                                <td><span class="text"><?php echo xlt('Username'); ?></span></td>
                                 <td>
-                                    <input class="entryfield" type="text" size="35" name="authUser">
+                                    <input class="entryfield" type="text" size="35" name="authUser" style = "height : 30px; width : 100%; margin-left : 0px; border : 1px solid black">
                                 </td>
                             </tr>
                             <tr>
-                                <td><span class="text"><?php echo xlt('Pass Phrase:'); ?></span></td>
+                                <td><span class="text"><?php echo xlt('Pass Phrase'); ?></span></td>
                                 <td>
-                                    <input class="entryfield" type="password" size="35" name="clearPass">
+                                    <input class="entryfield" type="password" size="35" name="clearPass" style = "height : 30px; width : 100%; margin-left : 0px; border : 1px solid black">
                                 </td>
                             </tr>
 
@@ -178,9 +193,9 @@ include_once("$srcdir/sql.inc");
                             if ($GLOBALS['language_menu_login']) {
                                 if (count($result3) != 1) { ?>
                                     <tr>
-                                        <td><span class="text"><?php echo xlt('Language'); ?>:</span></td>
+                                        <td><span class="text"><?php echo xlt('Language'); ?></span></td>
                                         <td>
-                                            <select class="entryfield" name=languageChoice size="1">
+                                            <select class="entryfield" name=languageChoice size="1" style = "height : 30px; border : 1px solid black ">
                                                 <?php
                                                 echo "<option selected='selected' value='" . attr($defaultLangID) . "'>" . xlt('Default') . " - " . xlt($defaultLangName) . "</option>\n";
                                                 foreach ($result3 as $iter) {
@@ -204,7 +219,7 @@ include_once("$srcdir/sql.inc");
                             <tr>
                                 <td>&nbsp;</td>
                                 <td>
-                                    <input class="button large" type="submit" onClick="transmit_form()"
+                                    <input class="cp-submit large" type="submit" onClick="transmit_form()"
                                            value="<?php echo xla('Login'); ?>">
                                 </td>
                             </tr>
@@ -228,7 +243,7 @@ include_once("$srcdir/sql.inc");
         </div>
         </div>
         <div class="demo">
-            <!-- Uncomment this for the LibreEHR demo installation
+            <!-- Uncomment this for the LibreHealth EHR demo installation
             <p><center>login = demo
             <br>pass phrase = I am Free!
             -->

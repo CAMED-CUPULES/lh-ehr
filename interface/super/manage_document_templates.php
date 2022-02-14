@@ -28,8 +28,18 @@ require_once('../globals.php');
 require_once($GLOBALS['srcdir'].'/acl.inc');
 require_once($GLOBALS['srcdir'].'/htmlspecialchars.inc.php');
 require_once($GLOBALS['srcdir'].'/formdata.inc.php');
+require_once("$srcdir/headers.inc.php");
+require_once("../../library/CsrfToken.php");
 
 if (!acl_check('admin', 'super')) die(htmlspecialchars(xl('Not authorized')));
+
+if (!empty($_POST)) {
+  if (!isset($_POST['token'])) {
+      CsrfToken::noTokenFoundError();
+  } else if (!(CsrfToken::verifyCsrfTokenAndCompareHash($_POST['token'], '/manage_document_templates.php.theform'))) {
+      CsrfToken::incorrectToken();
+  }
+}
 
 $form_filename = strip_escape_custom($_REQUEST['form_filename']);
 
@@ -104,7 +114,8 @@ if (!empty($_POST['bn_upload'])) {
 
 <body class="body_top">
 <form method='post' action='manage_document_templates.php' enctype='multipart/form-data'
- onsubmit='return top.restoreSession()'>
+ id="theform" name="theform" onsubmit='return top.restoreSession()'>
+ <input type='hidden' name='token' value="<?php echo hash_hmac('sha256', (string) '/manage_document_templates.php.theform', (string) $_SESSION['token']);?>" />
 
 <center>
 
@@ -121,11 +132,11 @@ if (!empty($_POST['bn_upload'])) {
   <td valign='top' class='detail' style='padding:10pt;' nowrap>
    <?php echo htmlspecialchars(xl('Source File')); ?>:
    <input type="hidden" name="MAX_FILE_SIZE" value="250000000" />
-   <input type="file" name="form_file" size="40" />&nbsp;
+   <input type="file" name="form_file" size="40"  />&nbsp;
    <?php echo htmlspecialchars(xl('Destination Filename')) ?>:
    <input type='text' name='form_dest_filename' size='30' />
    &nbsp;
-   <input type='submit' name='bn_upload' value='<?php echo xlt('Upload') ?>' />
+   <input type='submit' name='bn_upload' value='<?php echo xlt('Upload') ?>' class="cp-positive"/>
   </td>
  </tr>
 
@@ -161,9 +172,9 @@ if (!empty($_POST['bn_upload'])) {
 ?>
    </select>
    &nbsp;
-   <input type='submit' name='bn_download' value='<?php echo xlt('Download') ?>' />
+   <input type='submit' name='bn_download' value='<?php echo xlt('Download') ?>' class="cp-output"/>
    &nbsp;
-   <input type='submit' name='bn_delete' value='<?php echo xlt('Delete') ?>' />
+   <input type='submit' name='bn_delete' value='<?php echo xlt('Delete') ?>' class="cp-negative"/>
   </td>
  </tr>
 

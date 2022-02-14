@@ -26,11 +26,10 @@
  * See the Mozilla Public License for more details.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author Rod Roark <rod@sunsetsystems.com>
  * @author Terry Hill <teryhill@librehealth.io>
- * no other authors present in header file
- * @link http://www.libreehr.org
+ * @link http://librehealth.io
  *
  * Please help the overall project by sending changes you make to the author and to the LibreEHR community.
  *
@@ -75,10 +74,14 @@ class Claim {
   var $provider;          // row from users table (rendering provider)
   var $referrer;          // row from users table (referring provider)
   var $supervisor;        // row from users table (supervising provider)
+  var $ordering;          // row from users table (ordering provider) 
+  var $referring;          // row from users table (referring provider from encounter)
+  var $contract;          // row from users table (contract provider)
   var $insurance_numbers; // row from insurance_numbers table for current payer
   var $supervisor_numbers; // row from insurance_numbers table for current payer
   var $patient_data;      // row from patient_data table
   var $billing_options;   // row from form_misc_billing_options table
+  var $ub04_options;      // row from form_ub04_billing_options table
   var $invoice;           // result from get_invoice_summary()
   var $payers;            // array of arrays, for all payers
   var $copay;             // total of copays from the ar_activity table
@@ -157,9 +160,9 @@ class Claim {
 
     // We need the encounter date before we can identify the payers.
     $sql = "SELECT * FROM form_encounter WHERE " .
-      "pid = '{$this->pid}' AND " .
-      "encounter = '{$this->encounter_id}'";
-    $this->encounter = sqlQuery($sql);
+      "pid = ? AND " .
+      "encounter = ?";
+    $this->encounter = sqlQuery($sql, array($this->pid, $this->encounter_id));
 
     // Sort by procedure timestamp in order to get some consistency.
     $sql = "SELECT b.id, b.date, b.code_type, b.code, b.pid, b.provider_id, " .
@@ -170,9 +173,9 @@ class Claim {
       "FROM billing as b INNER JOIN code_types as ct " .
       "ON b.code_type = ct.ct_key " .
       "WHERE ct.ct_claim = '1' AND ct.ct_active = '1' AND " .
-      "b.encounter = '{$this->encounter_id}' AND b.pid = '{$this->pid}' AND " .
+      "b.encounter = ? AND b.pid = ? AND " .
       "b.activity = '1' ORDER BY b.date, b.id";
-    $res = sqlStatement($sql);
+    $res = sqlStatement($sql, array($this->encounter_id, $this->pid));
     while ($row = sqlFetchArray($res)) {
       // Save all diagnosis codes.
       if ($row['ct_diag'] == '1') {
@@ -207,8 +210,8 @@ class Claim {
     }
     
     $resMoneyGot = sqlStatement("SELECT pay_amount as PatientPay,session_id as id,".
-      "date(post_time) as date FROM ar_activity where pid ='{$this->pid}' and encounter ='{$this->encounter_id}' ".
-      "and payer_type=0 and account_code='PCP'");
+      "date(post_time) as date FROM ar_activity where pid = ? and encounter =? ".
+      "and payer_type=0 and account_code='PCP'", array($this->pid, $this->encounter_id));
       //new fees screen copay gives account_code='PCP'
     while($rowMoneyGot = sqlFetchArray($resMoneyGot)){
       $PatientPay=$rowMoneyGot['PatientPay']*-1;
@@ -263,6 +266,17 @@ class Claim {
       "ORDER BY forms.date";
     $this->billing_options = sqlQuery($sql);
 
+    if ($GLOBALS['claim_type'] =='1' || $GLOBALS['claim_type'] =='2') {
+       $sql = "SELECT fpa.* FROM forms JOIN form_UB04_billing_options AS fpa " .
+        "ON fpa.id = forms.form_id WHERE " .
+        "forms.encounter = '{$this->encounter_id}' AND " .
+        "forms.pid = '{$this->pid}' AND " .
+        "forms.deleted = 0 AND " .
+        "forms.formdir = 'ub04_billing_options' " .
+        "ORDER BY forms.date";
+      $this->ub04_options = sqlQuery($sql);
+    }
+
     $referrer_id = (empty($GLOBALS['MedicareReferrerIsRenderer']) ||
       $this->insurance_numbers['provider_number_type'] != '1C') ?
       $this->patient_data['ref_providerID'] : $provider_id;
@@ -274,6 +288,21 @@ class Claim {
     $sql = "SELECT * FROM users WHERE id = '$supervisor_id'";
     $this->supervisor = sqlQuery($sql);
     if (!$this->supervisor) $this->supervisor = array();
+    
+    $ordering_id = $this->encounter['ordering_physician'];
+    $sql = "SELECT * FROM users WHERE id = '$ordering_id'";
+    $this->ordering = sqlQuery($sql);
+    if (!$this->ordering) $this->ordering = array();
+
+    $referring_id = $this->encounter['referring_physician'];
+    $sql = "SELECT * FROM users WHERE id = '$referring_id'";
+    $this->referring = sqlQuery($sql);
+    if (!$this->referring) $this->referring = array();
+    
+    $contract_id = $this->encounter['contract_physician'];
+    $sql = "SELECT * FROM users WHERE id = '$contract_id'";
+    $this->contract = sqlQuery($sql);
+    if (!$this->contract) $this->contract = array();
     
     $billing_options_id = $this->billing_options['provider_id'];
     $sql = "SELECT * FROM users WHERE id = ?";
@@ -1083,8 +1112,16 @@ class Claim {
     return cleanDate($this->billing_options['hospitalization_date_from']);
   }
 
+  function hospitalizedFromDateValid() {
+    return $this->hospitalizedFrom()!=='';
+  }
+
   function hospitalizedTo() {
     return cleanDate($this->billing_options['hospitalization_date_to']);
+  }
+
+  function hospitalizedToDateValid() {
+    return $this->hospitalizedTo()!=='';
   }
 
   function isOutsideLab() {
@@ -1127,19 +1164,29 @@ class Claim {
     return x12clean(trim($this->billing_options['comments']));
   }
 
+  function Onset_Date_Misc_Billing() {
+    return cleanDate($this->billing_options['onset_date']);
+  }
+
+  function Onset_Date_Misc_Billing_Valid() {
+    return $this->Onset_Date_Misc_Billing()!=='';
+  }
+
   function dateInitialTreatment() {
     return cleanDate($this->billing_options['date_initial_treatment']);
   }
 
-  function box14qualifier()
-  {
+  function dateInitialTreatmentValid() {
+    return $this->dateInitialTreatment()!=='';
+  }
+
+  function box14qualifier() {
       // If no box qualifier specified use "431" indicating Onset
       return empty($this->billing_options['box_14_date_qual']) ? '431' :
               $this->billing_options['box_14_date_qual'];
   }
   
-  function box15qualifier()
-  {
+  function box15qualifier() {
       // If no box qualifier specified use "454" indicating Initial Treatment
       return empty($this->billing_options['box_15_date_qual']) ? '454' :
               $this->billing_options['box_15_date_qual'];
@@ -1390,6 +1437,64 @@ class Claim {
   function billingProviderTaxonomy() {
     if (empty($this->billing_prov_id['taxonomy'])) return '207Q00000X';
     return x12clean(trim($this->billing_prov_id['taxonomy']));
+  }
+
+  function orderingLastName() {
+    return x12clean(trim($this->ordering['lname']));
+  }
+
+  function orderingFirstName() {
+    return x12clean(trim($this->ordering['fname']));
+  }
+
+  function orderingMiddleName() {
+    return x12clean(trim($this->ordering['mname']));
+  }
+
+  function orderingNPI() {
+    return x12clean(trim($this->ordering['npi']));
+  }
+
+  function orderingUPIN() {
+    return x12clean(trim($this->ordering['upin']));
+  }
+
+  function orderingSSN() {
+    return x12clean(trim(str_replace('-', '', $this->ordering['federaltaxid'])));
+  }
+
+  function orderingTaxonomy() {
+    if (empty($this->ordering['taxonomy'])) return '207Q00000X';
+    return x12clean(trim($this->ordering['taxonomy']));
+  }
+
+  function referringLastName() {
+    return x12clean(trim($this->referring['lname']));
+  }
+
+  function referringFirstName() {
+    return x12clean(trim($this->referring['fname']));
+  }
+
+  function referringMiddleName() {
+    return x12clean(trim($this->referring['mname']));
+  }
+
+  function referringNPI() {
+    return x12clean(trim($this->referring['npi']));
+  }
+
+  function referringUPIN() {
+    return x12clean(trim($this->referring['upin']));
+  }
+
+  function referringSSN() {
+    return x12clean(trim(str_replace('-', '', $this->referring['federaltaxid'])));
+  }
+
+  function referringTaxonomy() {
+    if (empty($this->referring['taxonomy'])) return '207Q00000X';
+    return x12clean(trim($this->referring['taxonomy']));
   }
 
 }

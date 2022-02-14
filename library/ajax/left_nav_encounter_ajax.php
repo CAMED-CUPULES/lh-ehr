@@ -20,7 +20,15 @@ require_once("$srcdir/forms.inc");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/formatting.inc.php");
 require_once("$srcdir/encounter_events.inc.php");
+require_once("$srcdir/CsrfToken.php");
 
+if (!empty($_REQUEST)) {
+  if (!isset($_REQUEST['token'])) {
+      CsrfToken::noTokenFoundError();
+    } else if (!(CsrfToken::verifyCsrfToken($_REQUEST['token']))) {
+        die('Authentication failed.');
+    }
+}
 $issue = $_GET['issue'];
 $createvisit = !empty($_GET['createvisit']);
 $today = date('Y-m-d');
@@ -77,30 +85,14 @@ top.left_nav.setPatient(<?php echo "'" . htmlspecialchars(($prow['fname']) . " "
 if ($createvisit) {
   // Write JavaScript to open the selected encounter as the active encounter.
   // Logic cloned from encounters.php.
-  if ($GLOBALS['concurrent_layout']) {
 ?>
 top.left_nav.setEncounter('<?php echo $today; ?>', enc, 'RBot');
-top.left_nav.setRadio('RBot', 'enc');
 top.left_nav.loadFrame2('enc2', 'RBot', 'patient_file/encounter/encounter_top.php?set_encounter=' + enc);
 <?php
   }
-  else {
-?>
-top.Title.location.href = '../encounter/encounter_title.php?set_encounter='   + enc;
-top.Main.location.href  = '../encounter/patient_encounter.php?set_encounter=' + enc;
-<?php
-  }
-}
 else { // if not $createvisit
-  if ($GLOBALS['concurrent_layout']) {
 ?>
 top.left_nav.loadFrame2('nen1','RBot','forms/patient_encounter/new.php?autoloaded=1&calenc=&issue=<?php echo $issue; ?>');
 <?php
-  }
-  else {
-?>
-  // This case should not happen.
-<?php
-  }
 } // end not $createvisit
 ?>

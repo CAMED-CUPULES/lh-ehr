@@ -4,7 +4,16 @@
   */
 
 include_once("../globals.php");
+require_once("$srcdir/CsrfToken.php");
 
+//verify csrf token
+if (!empty($_GET)) {
+    if (!isset($_GET['token'])) {
+        CsrfToken::noTokenFoundError();
+    } else if (!(CsrfToken::verifyCsrfToken($_GET['token']))) {
+        die('Authentication failed.');
+    }
+  }
 ?>
 
 <html>
@@ -48,8 +57,10 @@ li {
 <h1><?php xl('Layout groups','e'); ?></h1>
 <ul>
 <?php
-$res = sqlStatement("SELECT distinct(group_name) FROM layout_options WHERE " .
-                    "form_id = '".$_GET['layout_id']."' ORDER BY group_name");
+
+$query = "SELECT distinct(group_name) FROM layout_options WHERE form_id = ? ORDER BY group_name";
+$res = sqlStatement($query, array($_GET['layout_id']));
+
 while ($row = sqlFetchArray($res)) {
     $gname = preg_replace("/^\d+/", "", $row['group_name']);
     $xlgname = "";

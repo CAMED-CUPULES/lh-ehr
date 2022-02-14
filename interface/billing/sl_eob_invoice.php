@@ -18,11 +18,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author  Rod Roark <rod@sunsetsystems.com>
  * @author  Roberto Vasquez <robertogagliotta@gmail.com>
  * @author  Terry Hill <teryhill@librehealth.io>
- * @link    http://www.libreehr.org
+ * @link    http://librehealth.io
  */
 
  
@@ -186,8 +186,10 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
    // subtract the co-pay only from the first procedure code
    if (isFirstProcCode == 1)
       balAmount = parseFloat(balAmount) + parseFloat(coPayAmount);
+  <?php if ($GLOBALS['auto_writeoff_y_n']) { ?>
 
    adjAmount = balAmount - payAmount;
+   <?php } ?>
    
    // Assign rounded adjustment value back to TextField
    adjField.value = adjAmount = Math.round(adjAmount*100)/100;
@@ -203,16 +205,20 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
     // A/R case, $trans_id matches form_encounter.id.
     $ferow = sqlQuery("SELECT e.*, p.fname, p.mname, p.lname " .
       "FROM form_encounter AS e, patient_data AS p WHERE " .
-      "e.id = '$trans_id' AND p.pid = e.pid");
+      "e.id = ? AND p.pid = e.pid", array($trans_id));
     if (empty($ferow)) die("There is no encounter with form_encounter.id = '$trans_id'.");
     $patient_id        = 0 + $ferow['pid'];
     $encounter_id      = 0 + $ferow['encounter'];
     $svcdate           = substr($ferow['date'], 0, 10);
     $form_payer_id     = 0 + $_POST['form_payer_id'];
     $form_reference    = $_POST['form_reference'];
+    $form_eft_number   = $ferow['eft_number'];
     $form_check_date   = fixDate($_POST['form_check_date'], date('Y-m-d'));
+    $form_claim_number = $ferow['claim_number'];
     $form_deposit_date = fixDate($_POST['form_deposit_date'], $form_check_date);
+    $form_document_image = $ferow['document_image'];
     $form_pay_total    = 0 + $_POST['form_pay_total'];
+    $form_seq_number  = $ferow['seq_number']; 
 
   $payer_type = 0;
   if (preg_match('/^Ins(\d)/i', $_POST['form_insurance'], $matches)) {
@@ -230,7 +236,7 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
         // The sl_eob_search page needs its invoice links modified to invoke
         // javascript to load form parms for all the above and submit.
         // At the same time that page would be modified to work off the
-        // libreehr database exclusively.
+        // LibreHealth EHR database exclusively.
         // And back to the sl_eob_invoice page, I think we may want to move
         // the source input fields from row level to header level.
 
@@ -260,7 +266,7 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
         if ($reason) {
           $tmp = sqlQuery("SELECT option_value FROM list_options WHERE " .
             "list_id = 'adjreason' AND " .
-            "option_id = '" . add_escape_custom($reason) . "'");
+            "option_id = ?", array(add_escape_custom($reason) . ""));
           if (empty($tmp['option_value'])) {
             // This should not happen but if it does, apply old logic.
             if (preg_match("/To copay/", $reason)) {
@@ -321,8 +327,13 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
 
         $form_done = 0 + $_POST['form_done'];
         $form_stmt_count = 0 + $_POST['form_stmt_count'];
+        $form_eft_number = $_POST['form_eft_number'];
+        $form_claim_number = $_POST['form_claim_number'];
+        $form_document_image = $_POST['form_document_image'];
+        $form_seq_number = $_POST['form_seq_number'];
+
         sqlStatement("UPDATE form_encounter " .
-          "SET last_level_closed = $form_done, " .
+          "SET last_level_closed = $form_done, eft_number = $form_eft_number, claim_number = $form_claim_number, document_image = $form_document_image, seq_number = $form_seq_number, " .
           "stmt_count = $form_stmt_count WHERE " .
           "pid = '$patient_id' AND encounter = '$encounter_id'");
 
@@ -348,7 +359,7 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
     $codes = ar_get_invoice_summary($patient_id, $encounter_id, true);
 
   $pdrow = sqlQuery("select billing_note " .
-    "from patient_data where pid = '$patient_id' limit 1");
+    "from patient_data where pid = ? limit 1", array($patient_id));
 ?>
 <center>
 
@@ -370,7 +381,7 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
     for ($i = 1; $i <= 3; ++$i) {
       $payerid = arGetPayerID($patient_id, $svcdate, $i);
       if ($payerid) {
-        $tmp = sqlQuery("SELECT name FROM insurance_companies WHERE id = $payerid");
+        $tmp = sqlQuery("SELECT name FROM insurance_companies WHERE id = ?", array($payerid));
         echo "Ins$i: " . $tmp['name'] . "<br />";
       }
     }
@@ -384,6 +395,13 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
     echo "<input type='text' name='form_stmt_count' size='10' value='" .
       (0 + $ferow['stmt_count']) . "' />\n";
     echo "</td>\n";
+    echo "<td rowspan='3' valign='bottom'>\n";
+    echo xl('Sequence Number:');
+    echo "</td>\n";
+    echo "<td rowspan='3' valign='bottom'>\n";
+    echo "<input type='text' name='form_seq_number' size='10' value='" .
+      (0 + $ferow['seq_number']) . "' />\n";
+    echo "</td>\n";
 ?>
  </tr>
  <tr>
@@ -393,11 +411,11 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
   <td>
    <?php
     $tmp = sqlQuery("SELECT fname, mname, lname " .
-      "FROM users WHERE id = " . $ferow['provider_id']);
+      "FROM users WHERE id = ?", array($ferow['provider_id']));
     echo text($tmp['fname']) . ' ' . text($tmp['mname']) . ' ' . text($tmp['lname']);
     $tmp = sqlQuery("SELECT bill_date FROM billing WHERE " .
-      "pid = '$patient_id' AND encounter = '$encounter_id' AND " .
-      "activity = 1 ORDER BY fee DESC, id ASC LIMIT 1");
+      "pid = '?' AND encounter = '?' AND " .
+      "activity = 1 ORDER BY fee DESC, id ASC LIMIT 1", array($patient_id));
     $billdate = substr(($tmp['bill_date'] . "Not Billed"), 0, 10);
 ?>
   </td>
@@ -442,6 +460,13 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
     echo "<td>\n";
     echo "<input type='text' name='form_reference' size='10' value='' />\n";
     echo "</td>\n";
+    echo "<td>\n";
+    echo xl('EFT/Check Number:');
+    echo "</td>\n";
+    echo "<td>\n";
+    echo "<input type='text' name='form_eft_number' size='10' value='" .
+      (0 + $ferow['eft_number']) . "' />\n";
+    echo "</td>\n";
 ?>
  </tr>
 
@@ -478,6 +503,13 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
     echo "<td>\n";
     echo "<input type='text' name='form_check_date' size='10' value='' />\n";
     echo "</td>\n";
+    echo "<td>\n";
+    echo xl('Claim Number:');
+    echo "</td>\n";
+    echo "<td>\n";
+    echo "<input type='text' name='form_claim_number' size='10' value='" .
+      (0 + $ferow['claim_number']) . "' />\n";
+    echo "</td>\n";
 ?>
  </tr>
  <tr>
@@ -503,6 +535,13 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
     echo "<input type='hidden' name='form_orig_check_date' value='' />\n";
     echo "<input type='hidden' name='form_orig_deposit_date' value='' />\n";
     echo "<input type='hidden' name='form_pay_total' value='' />\n";
+    echo "</td>\n";
+    echo "<td>\n";
+    echo xl('Document Image Number:');
+    echo "</td>\n";
+    echo "<td>\n";
+    echo "<input type='text' name='form_document_image' size='10' value='" .
+      (0 + $ferow['document_image']) . "' />\n";
     echo "</td>\n";
 ?>
  </tr>
@@ -549,11 +588,9 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
   <td class="dehead">
    <?php xl('Reason','e')?>
   </td>
-<?php if ($ALLOW_DELETE) { ?>
   <td class="dehead">
    <?php xl('Del','e')?>
   </td>
-<?php } ?>
  </tr>
 <?php
   $firstProcCodeIndex = -1;
@@ -586,6 +623,19 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
       if (isset($ddata['rsn'])) $tmpadj = 0 - $ddata['chg'];
       else $tmpchg = $ddata['chg'];
     }
+     if (substr($GLOBALS['payment_delete_begin_date'],0,1) == 'Y') {
+        $payment_delete_time = substr($GLOBALS['payment_delete_begin_date'],1,1);
+        $last_year = mktime(0,0,0,date('m'),date('d'),date('Y')-$payment_delete_time);
+     }
+     elseif (substr($GLOBALS['payment_delete_begin_date'],0,1) == 'M') {
+        $payment_delete_time = substr($GLOBALS['payment_delete_begin_date'],1,1); 
+        $last_year = mktime(0,0,0,date('m')-$payment_delete_time ,date('d'),date('Y'));
+     }
+     elseif (substr($GLOBALS['payment_delete_begin_date'],0,1) == 'D') {
+        $payment_delete_time = substr($GLOBALS['payment_delete_begin_date'],1,1); 
+        $last_year = mktime(0,0,0,date('m') ,date('d')-$payment_delete_time,date('Y'));
+     }
+     $payment_delete_from_date = date('Y-m-d', $last_year);
 ?>
  <tr bgcolor='<?php echo $bgcolor ?>'>
   <td class="detail">
@@ -618,15 +668,16 @@ function updateFields(payField, adjField, balField, coPayField, isFirstProcCode)
   <td class="detail">
    <?php echo $ddata['rsn'] ?>
   </td>
-<?php if ($ALLOW_DELETE) { ?>
+<?php if ((strtotime($payment_delete_from_date) < strtotime($ddate))) { ?>
   <td class="detail">
 <?php if (!empty($ddata['arseq'])) { ?>
    <input type="checkbox" name="form_del[<?php echo $ddata['arseq']; ?>]" />
+   <?php } ?>
 <?php } else { ?>
-   &nbsp;
+   <td class="detail">
+   &nbsp;&nbsp;&nbsp;&nbsp;
 <?php } ?>
   </td>
-<?php } ?>
  </tr>
 <?php
    } // end of prior detail line
@@ -689,11 +740,9 @@ while ($orow = sqlFetchArray($ores)) {
 ?>
   </td>
 
-<?php if ($ALLOW_DELETE) { ?>
   <td class="detail">
    &nbsp;
   </td>
-<?php } ?>
 
  </tr>
 <?php

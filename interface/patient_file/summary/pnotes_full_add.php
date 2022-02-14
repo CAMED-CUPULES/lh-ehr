@@ -21,7 +21,7 @@ require_once("$srcdir/options.inc.php");
 require_once("$srcdir/classes/Document.class.php");
 require_once("$srcdir/gprelations.inc.php");
 
-if ($GLOBALS['concurrent_layout'] && $_GET['set_pid']) {
+if ($_GET['set_pid']) {
     require_once("$srcdir/pid.inc");
     setpid($_GET['set_pid']);
 }
@@ -173,14 +173,14 @@ document.forms[0].submit();
 $title_docname = "";
 if ($docid) {
   $title_docname .= " " . xl("linked to document") . " ";
-  $d = new Document($docid);	
+  $d = new Document($docid);    
   $title_docname .= $d->get_url_file();
 }
 if ($orderid) {
   $title_docname .= " " . xl("linked to procedure order") . " $orderid";
 }
 
-$urlparms = "docid=$docid&orderid=$orderid";
+$urlparms = "docid=".attr($docid)."&orderid=".attr($orderid);
 ?>
 
 <form border='0' method='post' name='new_note' id="new_note" target="_parent"
@@ -188,7 +188,7 @@ $urlparms = "docid=$docid&orderid=$orderid";
 
     <div>
         <div style='float:left; margin-right: 5px'>
-            <span class="title"><?php echo xlt('Patient Note') . $title_docname; ?></span>
+            <span class="title"><?php echo xlt('Patient Note') . text($title_docname); ?></span>
         </div>
         <div>
             <?php if ($noteid) { ?>
@@ -205,7 +205,7 @@ $urlparms = "docid=$docid&orderid=$orderid";
 
 <input type='hidden' name='mode' id="mode" value="new">
 <input type='hidden' name='trigger' id="trigger" value="add">
-<input type='hidden' name='offset' id="offset" value="<?php echo $offset ?>">
+<input type='hidden' name='offset' id="offset" value="<?php echo attr($offset); ?>">
 <input type='hidden' name='form_active' id="form_active" value="<?php echo htmlspecialchars( $form_active, ENT_QUOTES) ?>">
 <input type='hidden' name='form_inactive' id="form_inactive" value="<?php echo htmlspecialchars( $form_inactive, ENT_QUOTES) ?>">
 <input type='hidden' name='noteid' id="noteid" value="<?php echo htmlspecialchars( $noteid, ENT_QUOTES) ?>">
@@ -283,7 +283,7 @@ if ($noteid) {
 
 
 <input type='hidden' name='mode' value="update">
-<input type='hidden' name='offset' id='noteid' value="<?php echo $offset;?>">
+<input type='hidden' name='offset' id='noteid' value="<?php echo attr($offset);?>">
 <input type='hidden' name='noteid' id='noteid' value="0">
 </form>
 
@@ -297,7 +297,7 @@ if ($offset > ($N-1)) {
     "&form_active=" . htmlspecialchars( $form_active, ENT_QUOTES) .
     "&form_inactive=" . htmlspecialchars( $form_inactive, ENT_QUOTES) .
     "&form_doc_only=" . htmlspecialchars( $form_doc_only, ENT_QUOTES) .
-    "&offset=" . ($offset-$N) . "' onclick='top.restoreSession()'>[" .
+    "&offset=" . attr(($offset-$N)) . "' onclick='top.restoreSession()'>[" .
     htmlspecialchars( xl('Previous'), ENT_NOQUOTES) . "]</a>\n";
 }
 ?>
@@ -310,7 +310,7 @@ if ($result_count == $N) {
     "&form_active=" . htmlspecialchars( $form_active, ENT_QUOTES) .
     "&form_inactive=" . htmlspecialchars( $form_inactive, ENT_QUOTES) .
     "&form_doc_only=" . htmlspecialchars( $form_doc_only, ENT_QUOTES) .
-    "&offset=" . ($offset+$N) . "' onclick='top.restoreSession()'>[" .
+    "&offset=" . attr(($offset+$N)) . "' onclick='top.restoreSession()'>[" .
     htmlspecialchars( xl('Next'), ENT_NOQUOTES) . "]</a>\n";
 }
 ?>
@@ -323,11 +323,10 @@ if ($result_count == $N) {
 <script language='JavaScript'>
 
 <?php
-if ($GLOBALS['concurrent_layout'] && $_GET['set_pid']) {
+if ($_GET['set_pid']) {
   $ndata = getPatientData($patient_id, "fname, lname, pid");
 ?>
- parent.left_nav.setPatient(<?php echo "'" . htmlspecialchars( $ndata['fname']." ".$ndata['lname'], ENT_QUOTES) . "',$patient_id,'" . htmlspecialchars( $ndata['pid'], ENT_QUOTES) . "',window.name"; ?>);
- parent.left_nav.setRadio(window.name, 'pno');
+ parent.left_nav.setPatient(<?php echo "'" . addslashes($ndata['fname']." ".$ndata['lname']) . "'," . addslashes($patient_id) . ",'" . addslashes($ndata['pid']) . "',window.name"; ?>);
 <?php
 }
 
@@ -408,8 +407,8 @@ $(document).ready(function(){
 });
 $(document).ready(function(){
     $("#cancel").click(function() {
-		  parent.$.fn.fancybox.close();
-	 });
+          parent.$.fn.fancybox.close();
+     });
 
 });
 </script>

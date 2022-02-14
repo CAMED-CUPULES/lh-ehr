@@ -16,33 +16,27 @@ require_once("$srcdir/amc.php");
 require_once $GLOBALS['srcdir'].'/ESign/Api.php';
 require_once("$srcdir/../controllers/C_Document.class.php");
 require_once("forms_review_header.php");
+require_once("$srcdir/headers.inc.php");
 ?>
 <html>
 
 <head>
-<?php html_header_show();?>
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" type="text/css" href="../../../library/js/fancybox-1.3.4/jquery.fancybox-1.3.4.css" media="screen" />
-<style type="text/css">@import url(../../../library/dynarch_calendar.css);</style>
-
-<!-- supporting javascript code -->
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-1.7.2.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js"></script>
-<script type="text/javascript" src="../../../library/textformat.js"></script>
-<script type="text/javascript" src="../../../library/dynarch_calendar.js"></script>
-<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
-<script type="text/javascript" src="../../../library/dynarch_calendar_setup.js"></script>
+<?php html_header_show();
+//  Include Bootstrap and datepicker Library
+  call_required_libraries(array("jquery-min-3-1-1","bootstrap","datepicker","fancybox"));
+resolveFancyboxCompatibility();
+?>
 <script type="text/javascript" src="../../../library/js/common.js"></script>
-<script type="text/javascript" src="../../../library/js/fancybox-1.3.4/jquery.fancybox-1.3.4.js"></script>
+
 <script src="<?php echo $GLOBALS['webroot'] ?>/library/ESign/js/jquery.esign.js"></script>
 <link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['webroot'] ?>/library/ESign/css/esign.css" />
-<?php 
+<?php
 $esignApi = new Api();
 ?>
 
 <?php // include generic js support for graphing ?>
-<script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/library/openflashchart/js/json/json2.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/library/openflashchart/js/swfobject.js"></script>
+    <script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/modules/openflashchart/js/json/json2.js"></script>
+    <script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/modules/openflashchart/js/swfobject.js"></script>
 
 <?php // if the track_anything form exists, then include the styling and js functions for graphing
 if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { ?>
@@ -53,47 +47,47 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
 <script type="text/javascript">
 $.noConflict();
 jQuery(document).ready( function($) {
-	var formConfig = <?php echo $esignApi->formConfigToJson(); ?>;
-    $(".esign-button-form").esign( 
-    	formConfig,
-        { 	    
+    var formConfig = <?php echo $esignApi->formConfigToJson(); ?>;
+    $(".esign-button-form").esign(
+        formConfig,
+        {
             afterFormSuccess : function( response ) {
                 if ( response.locked ) {
-                	var editButtonId = "form-edit-button-"+response.formDir+"-"+response.formId;
+                    var editButtonId = "form-edit-button-"+response.formDir+"-"+response.formId;
                     $("#"+editButtonId).replaceWith( response.editButtonHtml );
                 }
-                
+
                 var logId = "esign-signature-log-"+response.formDir+"-"+response.formId;
                 $.post( formConfig.logViewAction, response, function( html ) {
-                    $("#"+logId).replaceWith( html );  
+                    $("#"+logId).replaceWith( html );
                 });
             }
-		}
+        }
     );
 
     var encounterConfig = <?php echo $esignApi->encounterConfigToJson(); ?>;
-    $(".esign-button-encounter").esign( 
-    	encounterConfig,
-        { 	    
+    $(".esign-button-encounter").esign(
+        encounterConfig,
+        {
             afterFormSuccess : function( response ) {
-                // If the response indicates a locked encounter, replace all 
+                // If the response indicates a locked encounter, replace all
                 // form edit buttons with a "disabled" button, and "disable" left
                 // nav visit form links
                 if ( response.locked ) {
                     // Lock the form edit buttons
-                	$(".form-edit-button").replaceWith( response.editButtonHtml );
-                	// Disable the new-form capabilities in left nav
-                	top.window.parent.left_nav.syncRadios();
+                    $(".form-edit-button").replaceWith( response.editButtonHtml );
+                    // Disable the new-form capabilities in left nav
+                    top.window.parent.left_nav.syncRadios();
                     // Disable the new-form capabilities in top nav of the encounter
-                	$(".encounter-form-category-li").remove();
+                    $(".encounter-form-category-li").remove();
                 }
-                
+
                 var logId = "esign-signature-log-encounter-"+response.encounterId;
                 $.post( encounterConfig.logViewAction, response, function( html ) {
                     $("#"+logId).replaceWith( html );
                 });
             }
-		}
+        }
     );
 
     $(".onerow").mouseover(function() { $(this).toggleClass("highlight"); });
@@ -112,6 +106,7 @@ jQuery(document).ready( function($) {
             { amc_id: "patient_edu_amc",
               complete: true,
               mode: mode,
+              token: "<?php echo $_SESSION['token'];?>",
               patient_id: <?php echo htmlspecialchars($pid,ENT_NOQUOTES); ?>,
               object_category: "form_encounter",
               object_id: <?php echo htmlspecialchars($encounter,ENT_NOQUOTES); ?>
@@ -131,6 +126,7 @@ jQuery(document).ready( function($) {
             { amc_id: "provide_sum_pat_amc",
               complete: true,
               mode: mode,
+              token: "<?php echo $_SESSION['token'];?>",
               patient_id: <?php echo htmlspecialchars($pid,ENT_NOQUOTES); ?>,
               object_category: "form_encounter",
               object_id: <?php echo htmlspecialchars($encounter,ENT_NOQUOTES); ?>
@@ -155,6 +151,7 @@ jQuery(document).ready( function($) {
             { amc_id: "med_reconc_amc",
               complete: false,
               mode: mode,
+              token: "<?php echo $_SESSION['token'];?>",
               patient_id: <?php echo htmlspecialchars($pid,ENT_NOQUOTES); ?>,
               object_category: "form_encounter",
               object_id: <?php echo htmlspecialchars($encounter,ENT_NOQUOTES); ?>
@@ -174,6 +171,7 @@ jQuery(document).ready( function($) {
             { amc_id: "med_reconc_amc",
               complete: true,
               mode: mode,
+              token: "<?php echo $_SESSION['token'];?>",
               patient_id: <?php echo htmlspecialchars($pid,ENT_NOQUOTES); ?>,
               object_category: "form_encounter",
               object_id: <?php echo htmlspecialchars($encounter,ENT_NOQUOTES); ?>
@@ -186,12 +184,32 @@ jQuery(document).ready( function($) {
     var GotoForm = function(obj) {
         var parts = $(obj).attr("id").split("~");
         top.restoreSession();
-        <?php if ($GLOBALS['concurrent_layout']): ?>
         parent.location.href = "<?php echo $rootdir; ?>/patient_file/encounter/view_form.php?formname="+parts[0]+"&id="+parts[1];
-        <?php else: ?>
-        top.Main.location.href = "<?php echo $rootdir; ?>/patient_file/encounter/view_form.php?formname="+parts[0]+"&id="+parts[1];
-        <?php endif; ?>
     }
+
+$(".flat_button").click(function(){
+   if($(this).attr("data-encounter")!=""){
+   var parts = $(this).attr("data-encounter").split("~");
+    var enc = parts[0];
+    var datestr = parts[1];
+  //  var f = top.window.parent.left_nav.document.forms[0];
+        frame = 'RBot';
+  //  if (!f.cb_bot.checked) frame = 'RTop'; else if (!f.cb_top.checked) frame = 'RBot';
+   top.restoreSession();
+    <?php if ($GLOBALS['concurrent_layout']) { ?>
+    top.parent.left_nav.setEncounter(datestr, enc, frame);
+    top.parent.left_nav.setRadio(frame, 'enc');
+    parent.location.href  = 'encounter_top.php?set_encounter=' + enc;
+<?php } else { ?>
+    //top.Title.location.href = 'encounter_title.php?set_encounter='   + enc;
+    //top.Main.location.href  = 'patient_encounter.php?set_encounter=' + enc;
+<?php } ?>
+
+   }
+   else{
+    alert('No '+($(this).attr("name").charAt(0).toUpperCase()+$(this).attr("name").slice(1))+' Encounters Found.');
+   }
+ });
 });
 
  // Process click on Delete link.
@@ -202,54 +220,48 @@ jQuery(document).ready( function($) {
 
  // Called by the deleter.php window on a successful delete.
  function imdeleted(EncounterId) {
-<?php if ($GLOBALS['concurrent_layout']) { ?>
   top.window.parent.left_nav.removeOptionSelected(EncounterId);
   top.window.parent.left_nav.clearEncounter();
-<?php } else { ?>
-  top.restoreSession();
-  top.Title.location.href = '../patient_file/encounter/encounter_title.php';
-  top.Main.location.href  = '../patient_file/encounter/patient_encounter.php?mode=new';
-<?php } ?>
  }
 
 </script>
 
 <script language="javascript">
 function expandcollapse(atr){
-	if(atr == "expand") {
-		for(i=1;i<15;i++){
-			var mydivid="divid_"+i;var myspanid="spanid_"+i;
-				var ele = document.getElementById(mydivid);	var text = document.getElementById(myspanid);
-				if (typeof(ele) != 'undefined' && ele != null)
-					ele.style.display = "block";
-				if (typeof(text) != 'undefined' && text != null)
-					text.innerHTML = "<?php xl('Collapse','e'); ?>";
-		}
-  	}
-	else {
-		for(i=1;i<15;i++){
-			var mydivid="divid_"+i;var myspanid="spanid_"+i;
-				var ele = document.getElementById(mydivid);	var text = document.getElementById(myspanid);
-				if (typeof(ele) != 'undefined' && ele != null)
-					ele.style.display = "none";	
-				if (typeof(text) != 'undefined' && text != null)
-					text.innerHTML = "<?php xl('Expand','e'); ?>";
-		}
-	}
+    if(atr == "expand") {
+        for(i=1;i<15;i++){
+            var mydivid="divid_"+i;var myspanid="spanid_"+i;
+                var ele = document.getElementById(mydivid); var text = document.getElementById(myspanid);
+                if (typeof(ele) != 'undefined' && ele != null)
+                    ele.style.display = "block";
+                if (typeof(text) != 'undefined' && text != null)
+                    text.innerHTML = "<?php xl('Collapse','e'); ?>";
+        }
+    }
+    else {
+        for(i=1;i<15;i++){
+            var mydivid="divid_"+i;var myspanid="spanid_"+i;
+                var ele = document.getElementById(mydivid); var text = document.getElementById(myspanid);
+                if (typeof(ele) != 'undefined' && ele != null)
+                    ele.style.display = "none";
+                if (typeof(text) != 'undefined' && text != null)
+                    text.innerHTML = "<?php xl('Expand','e'); ?>";
+        }
+    }
 
 }
 
 function divtoggle(spanid, divid) {
-	var ele = document.getElementById(divid);
-	var text = document.getElementById(spanid);
-	if(ele.style.display == "block") {
-		ele.style.display = "none";
-		text.innerHTML = "<?php xl('Expand','e'); ?>";
-  	}
-	else {
-		ele.style.display = "block";
-		text.innerHTML = "<?php xl('Collapse','e'); ?>";
-	}
+    var ele = document.getElementById(divid);
+    var text = document.getElementById(spanid);
+    if(ele.style.display == "block") {
+        ele.style.display = "none";
+        text.innerHTML = "<?php xl('Expand','e'); ?>";
+    }
+    else {
+        ele.style.display = "block";
+        text.innerHTML = "<?php xl('Collapse','e'); ?>";
+    }
 }
 </script>
 
@@ -267,17 +279,20 @@ function divtoggle(spanid, divid) {
         float:left;
         margin-left:6px;
     }
-    
+
     .encounter-summary-container {
-        float:left; 
+        float:left;
         width:100%;
     }
-    
+
     .encounter-summary-column {
-        width: 33.3%; 
-        float:left; 
+        width: 33.3%;
+        float:left;
         display:inline;
         margin-top:10px;
+    }
+    .flat_button{
+    padding: 3px 6px;
     }
 </style>
 
@@ -286,7 +301,18 @@ function divtoggle(spanid, divid) {
 $hide=1;
 require_once("$incdir/patient_file/encounter/new_form.php");
 ?>
-<body class="body_top">
+<?php
+$previous = sqlQuery("select encounter,date from form_encounter where pid = '".$_SESSION['pid']."' and encounter < ? ORDER BY encounter desc limit 1 ",array($_SESSION['encounter']));
+$next = sqlQuery("select encounter,date from form_encounter where pid = '".$_SESSION['pid']."' and encounter > ? ORDER BY encounter asc limit 1",array($_SESSION['encounter']));
+$previous_value = isset($previous['encounter'])?$previous['encounter']."~".date("Y-m-d",strtotime($previous['date'])):"";
+$next_value = isset($next['encounter'])?$next['encounter']."~".date("Y-m-d",strtotime($next['date'])):"";
+?>
+<div style="float:left;">
+<input type="button" name="previous" data-encounter="<?php echo $previous_value;?>" class="flat_button cp-misc" value="<&nbsp;Previous" ></input>
+</div>
+<div style="float:right;">
+<input type="button" name="next" data-encounter="<?php echo $next_value;?>" class="flat_button cp-misc" value="Next&nbsp;>" ></input>
+</div>
 
 <div id="encounter_forms">
 
@@ -316,7 +342,7 @@ if (is_numeric($pid)) {
     }
     // Check for no access to the encounter's sensitivity level.
     $result = sqlQuery("SELECT sensitivity FROM form_encounter WHERE " .
-                        "pid = '$pid' AND encounter = '$encounter' LIMIT 1");
+                        "pid = ? AND encounter = ? LIMIT 1", array($pid, $encounter));
     if ($result['sensitivity'] && !acl_check('sensitivities', $result['sensitivity'])) {
         $auth_notes_a = $auth_notes = $auth_relaxed = 0;
     }
@@ -324,7 +350,7 @@ if (is_numeric($pid)) {
 ?>
 </div>
 <div style='margin-top:8px;'>
-<?php 
+<?php
 // ESign for entire encounter
 $esign = $esignApi->createEncounterESign( $encounter );
 if ( $esign->isButtonViewable() ) {
@@ -332,16 +358,16 @@ if ( $esign->isButtonViewable() ) {
 }
 ?>
 <?php if (acl_check('admin', 'super')) { ?>
-    <a href='toggledivs(this.id,this.id);' class='css_button' onclick='return deleteme()'><span><?php echo xl('Delete') ?></span></a>
+    <a href='toggledivs(this.id,this.id);' class='css_button cp-negative' onclick='return deleteme()'><span><?php echo xl('Delete') ?></span></a>
 <?php } ?>
-&nbsp;&nbsp;&nbsp;<a href="#" onClick='expandcollapse("expand");' style="font-size:80%;"><?php xl('Expand All','e'); ?></a>
-&nbsp;&nbsp;&nbsp;<a  style="font-size:80%;" href="#" onClick='expandcollapse("collapse");'><?php xl('Collapse All','e'); ?></a>
+&nbsp;&nbsp;&nbsp;<a href="#" onClick='expandcollapse("expand");' style="font-size:80%;"><?php echo xlt('Expand All'); ?></a>
+&nbsp;&nbsp;&nbsp;<a  style="font-size:80%;" href="#" onClick='expandcollapse("collapse");'><?php echo xlt('Collapse All'); ?></a>
 </div>
 </div>
 
 <div class='encounter-summary-column'>
-<?php if ( $esign->isLogViewable() ) { 
-    $esign->renderLog(); 
+<?php if ( $esign->isLogViewable() ) {
+    $esign->renderLog();
 } ?>
 </div>
 
@@ -349,7 +375,7 @@ if ( $esign->isButtonViewable() ) {
 <?php if ($GLOBALS['enable_amc_prompting']) { ?>
     <div style='float:right;margin-right:25px;border-style:solid;border-width:1px;'>
         <div style='float:left;margin:5px 5px 5px 5px;'>
-            <table>
+            <table class="table">
             <tr>
             <td>
             <?php // Display the education resource checkbox (AMC prompting)
@@ -436,31 +462,31 @@ if ( $esign->isButtonViewable() ) {
 </div>
 
 <!-- Get the documents tagged to this encounter and display the links and notes as the tooltip -->
-<?php 
-	$docs_list = getDocumentsByEncounter($pid,$_SESSION['encounter']);
-	if(count($docs_list) > 0 ) {
+<?php
+    $docs_list = getDocumentsByEncounter($pid,$_SESSION['encounter']);
+    if(count($docs_list) > 0 ) {
 ?>
 <div class='enc_docs'>
 <span class="bold"><?php echo xlt("Document(s)"); ?>:</span>
 <?php
-	$doc = new C_Document();
-	foreach ($docs_list as $doc_iter) {
-		$doc_url = $doc->_tpl_vars[CURRENT_ACTION]. "&view&patient_id=".attr($pid)."&document_id=" . attr($doc_iter[id]) . "&";
-		// Get notes for this document.
-		$queryString = "SELECT GROUP_CONCAT(note ORDER BY date DESC SEPARATOR '|') AS docNotes, GROUP_CONCAT(date ORDER BY date DESC SEPARATOR '|') AS docDates
-			FROM notes WHERE foreign_id = ? GROUP BY foreign_id";
-		$noteData = sqlQuery($queryString,array($doc_iter[id]));
-		$note = '';
-		if ( $noteData ) {
-			$notes = array();
-			$notes = explode("|",$noteData['docNotes']);
-			$dates = explode("|", $noteData['docDates']);
-			for ( $i = 0 ; $i < count($notes) ; $i++ )
-				$note .= oeFormatShortDate(date('Y-m-d', strtotime($dates[$i]))) . " : " . $notes[$i] . "\n";	
-		}
+    $doc = new C_Document();
+    foreach ($docs_list as $doc_iter) {
+        $doc_url = $doc->_tpl_vars[CURRENT_ACTION]. "&view&patient_id=".attr($pid)."&document_id=" . attr($doc_iter[id]) . "&";
+        // Get notes for this document.
+        $queryString = "SELECT GROUP_CONCAT(note ORDER BY date DESC SEPARATOR '|') AS docNotes, GROUP_CONCAT(date ORDER BY date DESC SEPARATOR '|') AS docDates
+            FROM notes WHERE foreign_id = ? GROUP BY foreign_id";
+        $noteData = sqlQuery($queryString,array($doc_iter[id]));
+        $note = '';
+        if ( $noteData ) {
+            $notes = array();
+            $notes = explode("|",$noteData['docNotes']);
+            $dates = explode("|", $noteData['docDates']);
+            for ( $i = 0 ; $i < count($notes) ; $i++ )
+                $note .= oeFormatShortDate(date('Y-m-d', strtotime($dates[$i]))) . " : " . $notes[$i] . "\n";
+        }
 ?>
-	<br>
-	<a title="<?php echo attr($note);?>" href="<?php echo $doc_url;?>" style="font-size:small;" onsubmit="return top.restoreSession()"><?php echo oeFormatShortDate($doc_iter[docdate]) . ": " . text(basename($doc_iter[url]));?></a>
+    <br>
+    <a title="<?php echo attr($note);?>" href="<?php echo $doc_url;?>" style="font-size:small;" onsubmit="return top.restoreSession()"><?php echo oeFormatShortDate($doc_iter[docdate]) . ": " . text(basename($doc_iter[url]));?></a>
 <?php } ?>
 </div>
 <?php } ?>
@@ -468,8 +494,8 @@ if ( $esign->isButtonViewable() ) {
 
 <?php
   if ($result = getFormByEncounter($pid, $encounter, "id, date, form_id, form_name, formdir, user, deleted")) {
-    echo "<table width='100%' id='partable'>";
-	$divnos=1;
+    echo "<table class='table' style='table-layout:fixed;width: 100%;'>";
+    $divnos=1;
     foreach ($result as $iter) {
         $formdir = $iter['formdir'];
 
@@ -491,22 +517,22 @@ if ( $esign->isButtonViewable() ) {
         // Create the ESign instance for this form
         $esign = $esignApi->createFormESign( $iter['id'], $formdir, $encounter );
         echo "<tr>";
-        echo "<td style='border-bottom:1px solid'>";
+        echo "<td>";
         // a link to edit the form
         echo "<div class='form_header_controls'>";
-        
+
         // If the form is locked, it is no longer editable
         if ( $esign->isLocked() ) {
             echo "<a href=# class='css_button_small form-edit-button-locked' id='form-edit-button-".attr($formdir)."-".attr($iter['id'])."'><span>".xlt('Locked')."</span></a>";
         } else {
-            echo "<a class='css_button_small form-edit-button' id='form-edit-button-".attr($formdir)."-".attr($iter['id'])."' target='".
-                    ($GLOBALS['concurrent_layout'] ? "_parent" : "Main") .
+            echo "<a class='css_button_small form-edit-button cp-positive' id='form-edit-button-".attr($formdir)."-".attr($iter['id'])."' target='".
+                    "_parent" .
                     "' href='$rootdir/patient_file/encounter/view_form.php?" .
                     "formname=" . attr($formdir) . "&id=" . attr($iter['form_id']) .
                     "' onclick='top.restoreSession()'>";
             echo "<span>" . xlt('Edit') . "</span></a>";
         }
-        
+
         if ( $esign->isButtonViewable() ) {
             echo $esign->buttonHtml();
         }
@@ -514,16 +540,15 @@ if ( $esign->isButtonViewable() ) {
         if (acl_check('admin', 'super') ) {
             if ( $formdir != 'patient_encounter') {
                 // a link to delete the form from the encounter
-                echo "<a target='".
-                    ($GLOBALS['concurrent_layout'] ? "_parent" : "Main") .
-                    "' href='$rootdir/patient_file/encounter/delete_form.php?" .
+                echo "<a target='_parent'" .
+                    " href='$rootdir/patient_file/encounter/delete_form.php?" .
                     "formname=" . $formdir .
                     "&id=" . $iter['id'] .
                     "&encounter=". $encounter.
                     "&pid=".$pid.
                     "' class='css_button_small' title='" . xl('Delete this form') . "' onclick='top.restoreSession()'><span>" . xl('Delete') . "</span></a>";
             } else {
-                ?><a href='javascript:;' class='css_button_small' style='color:gray'><span><?php xl('Delete','e'); ?></span></a><?php
+                ?><a href='javascript:;' class='css_button_small cp-negative' style='color:gray'><span><?php xl('Delete','e'); ?></span></a><?php
             }
         }
 
@@ -542,7 +567,7 @@ if ( $esign->isButtonViewable() ) {
         echo "</td>\n";
         echo "</tr>";
         echo "<tr>";
-        echo "<td valign='top' class='formrow'><div class='tab' id='divid_$divnos' style='display:block'>";
+        echo "<td valign='top' class='formrow'><div id='divid_$divnos' style='display:block'>";
 
         // Use the form's report.php for display.  Forms with names starting with LBF
         // are list-based forms sharing a single collection of code.
@@ -555,13 +580,13 @@ if ( $esign->isButtonViewable() ) {
           include_once($GLOBALS['incdir'] . "/forms/$formdir/report.php");
           call_user_func($formdir . "_report", $pid, $encounter, 2, $iter['form_id']);
         }
-        
+
         if ( $esign->isLogViewable() ) {
             $esign->renderLog();
         }
 
         echo "</div></td></tr>";
-		$divnos=$divnos+1;
+        $divnos=$divnos+1;
     }
     echo "</table>";
 }

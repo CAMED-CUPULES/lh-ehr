@@ -50,7 +50,7 @@ $patient_id = ($_GET['patient_id']) ? $_GET['patient_id'] : "";
   </span>
 </div>
 <div>
-  <a href="../summary/demographics.php" <?php if (!$GLOBALS['concurrent_layout']) echo "target='Main'"; ?> class="css_button" onclick="top.restoreSession()">
+  <a href="../summary/demographics.php" class="css_button" onclick="top.restoreSession()">
     <span><?php echo htmlspecialchars( xl('Back To Patient'), ENT_NOQUOTES);?></span>
   </a>
 </div>
@@ -242,7 +242,8 @@ $patient_id = ($_GET['patient_id']) ? $_GET['patient_id'] : "";
         rule: this.name,
         type: 'passive_alert',
         setting: this.value,
-        patient_id: '<?php echo htmlspecialchars($patient_id, ENT_QUOTES); ?>'
+        patient_id: '<?php echo htmlspecialchars($patient_id, ENT_QUOTES); ?>',
+        token: "<?php echo $_SESSION['token'];?>" 
       });
     });
 
@@ -252,7 +253,8 @@ $patient_id = ($_GET['patient_id']) ? $_GET['patient_id'] : "";
         rule: this.name,
         type: 'active_alert',
         setting: this.value,
-        patient_id: '<?php echo htmlspecialchars($patient_id, ENT_QUOTES); ?>'
+        patient_id: '<?php echo htmlspecialchars($patient_id, ENT_QUOTES); ?>',
+        token: "<?php echo $_SESSION['token'];?>" 
       });
     });
 
@@ -262,7 +264,8 @@ $patient_id = ($_GET['patient_id']) ? $_GET['patient_id'] : "";
         plan: this.name,
         type: 'normal',
         setting: this.value,
-        patient_id: '<?php echo htmlspecialchars($patient_id, ENT_QUOTES); ?>'
+        patient_id: '<?php echo htmlspecialchars($patient_id, ENT_QUOTES); ?>',
+        token: "<?php echo $_SESSION['token'];?>" 
       });
     });
 

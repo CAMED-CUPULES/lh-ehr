@@ -33,9 +33,11 @@ $fake_register_globals=false;
 
 
 require_once("../globals.php");
+require_once("$srcdir/headers.inc.php");
 require_once("$srcdir/sql.inc");
 require_once("$srcdir/formdata.inc.php");
 require_once("$srcdir/options.inc.php");
+require_once("$srcdir/headers.inc.php");
 require_once("$srcdir/acl.inc");
 
 // Ensure authorized
@@ -67,40 +69,54 @@ if ( isset($_POST["mode"]) && $_POST["mode"] == "facility_user_id" && isset($_PO
 ?>
 <html>
 <head>
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['webroot'] ?>/library/js/fancybox/jquery.fancybox-1.2.6.css" media="screen" />
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery.1.3.2.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/common.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/fancybox/jquery.fancybox-1.2.6.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-ui.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery.easydrag.handler.beta2.js"></script>
-
+    <?php call_required_libraries(array("jquery-min-3-1-1","bootstrap","font-awesome" , "iziModalToast")); ?>
+    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/common.js"></script>
+    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-ui.js"></script>
 <script type="text/javascript">
+    $(document).ready(function(){
+        $(".facitityUser").click(function () {
+            var iter1 = $(this).attr("data-text1");
+            var iter2 = $(this).attr("data-text2");
+            var title = $(this).children('span').text();
+            initIziLink(iter1 , iter2, title);
+        });
 
-$(document).ready(function(){
+        function initIziLink(iter1, iter2, title) {
+            $("#facilityUser-iframe").iziModal({
+                title: 'User - <b style="color: white">'+title+'</b>',
+                subtitle: '',
+                headerColor: '#88A0B9',
+                closeOnEscape: true,
+                fullscreen:true,
+                overlayClose: false,
+                closeButton: true,
+                theme: 'light',  // light
+                iframe: true,
+                width:500,
+                focusInput: true,
+                padding:5,
+                iframeHeight: 250,
+                iframeURL:'facility_user_admin.php?user_id='+iter1 + '&fac_id='+iter2,
+                onClosed:function () {
+                    location.reload();
+                }
+            });
 
-    // fancy box
-    enable_modals();
-    
-    // special size for
-	$(".iframe_small").fancybox( {
-		'overlayOpacity' : 0.0,
-		'showCloseButton' : true,
-		'frameHeight' : 300,
-		'frameWidth' : 500
-	});
-	
-	$(function(){
-		// add drag and drop functionality to fancybox
-		$("#fancy_outer").easydrag();
-	});
-});
+            setTimeout(function () {
+                call_izi();
+            },200);
+        }
 
+        function call_izi() {
+            $("#facilityUser-iframe").iziModal('open');
+        }
+
+    });
 </script>
 
 </head>
 <body class="body_top">
+<div id="facilityUser-iframe"></div>
 
 <?php
 // Collect all users
@@ -127,50 +143,50 @@ for($i=0; $row=sqlFetchArray($l_res); $i++) {
 <div>
     <div>
        <table>
-	  <tr >
-		<td><b><?php echo xlt('Facility Specific User Information'); ?></b></td>
-		<td><a href="usergroup_admin.php" class="css_button" onclick="top.restoreSession()"><span><?php echo xlt('Back to Users'); ?></span></a>
-		</td>
-	 </tr>
-	</table>
+      <tr >
+        <td><b><?php echo xlt('Facility Specific User Information'); ?></b></td>
+        <td><a href="usergroup_admin.php" class="css_button cp-misc" onclick="top.restoreSession()"><span><?php echo xlt('Back to Users'); ?></span></a>
+        </td>
+     </tr>
+    </table>
     </div>
-	
-	<div style="width:400px;">
-		<div>
 
-			<table cellpadding="1" cellspacing="0" class="showborder">
-				<tbody><tr height="22" class="showborder_head">
-					<th width="180px"><b><?php echo xlt('Username'); ?></b></th>
-					<th width="270px"><b><?php echo xlt('Full Name'); ?></b></th>
-					<th width="190px"><b><span class="bold"><?php echo xlt('Facility'); ?></span></b></th>
+    <div style="width:400px;">
+        <div>
+
+            <table class="table table-hover" cellpadding="1" cellspacing="0" class="showborder">
+                <tbody><tr height="22" class="showborder_head">
+                    <th><b><?php echo xlt('Username'); ?></b></th>
+                    <th><b><?php echo xlt('Full Name'); ?></b></th>
+                    <th><b><span class="bold"><?php echo xlt('Facility'); ?></span></b></th>
                                         <?php
                                         foreach ($l_arr as $layout_entry) {
                                           echo "<th width='100px'><b><span class='bold'>" . text(xl_layout_label($layout_entry['title'])) . "&nbsp;</span></b></th>";
                                         }
                                         ?>
-				</tr>
-					<?php
-					while ($user = sqlFetchArray($u_res)) {
-						foreach ($f_arr as $facility) {
-					?>
-				<tr height="20"  class="text" style="border-bottom: 1px dashed;">
-				   <td class="text"><b><a href="facility_user_admin.php?user_id=<?php echo attr($user['id']);?>&fac_id=<?php echo attr($facility['id']);?>" class="iframe_small" onclick="top.restoreSession()"><span><?php echo text($user['username']);?></span></a></b>&nbsp;</td>
-				   <td><span class="text"><?php echo text($user['fname'] . " " . $user['lname']);?></span>&nbsp;</td>
-				   <td><span class="text"><?php echo text($facility['name']);?>&nbsp;</td>
+                </tr>
+                    <?php
+                    while ($user = sqlFetchArray($u_res)) {
+                        foreach ($f_arr as $facility) {
+                    ?>
+                <tr height="20"  class="text" style="border-bottom: 1px dashed;">
+                    <td class="text"><b><a data-text1="<?php echo attr($user['id']);?>" data-text2="<?php echo attr($facility['id']);?>" href="#" class="facitityUser" onclick="top.restoreSession()"><span><?php echo text($user['username']);?></span></a></b>&nbsp;</td>
+                    <td><span class="text"><?php echo text($user['fname'] . " " . $user['lname']);?></span>&nbsp;</td>
+                    <td><span class="text"><?php echo text($facility['name']);?>&nbsp;</td>
                                    <?php
                                    foreach ($l_arr as $layout_entry) {
                                      $entry_data = sqlQuery("SELECT `field_value` FROM `facility_user_ids` " .
                                                             "WHERE `uid` = ? AND `facility_id` = ? AND `field_id` = ?", array($user['id'],$facility['id'],$layout_entry['field_id']) );
                                      echo "<td><span class='text'>" . generate_display_field($layout_entry,$entry_data['field_value']) . "&nbsp;</td>";
                                    }
-                                   ?>  
-				</tr>
-				<?php
-				}}
-				?>
-				</tbody>
-			</table>
-		</div>
+                                   ?>
+                </tr>
+                <?php
+                }}
+                ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 </body>

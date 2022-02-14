@@ -1,10 +1,33 @@
 <?php
- // Copyright (C) 2006-2010 Rod Roark <rod@sunsetsystems.com>
- //
- // This program is free software; you can redistribute it and/or
- // modify it under the terms of the GNU General Public License
- // as published by the Free Software Foundation; either version 2
- // of the License, or (at your option) any later version.
+/*
+ *  addrbook_edit.php for the editing of the address book information
+ *
+ * Copyright (C) 2016-2018 Terry Hill <teryhill@librehealth.io>
+ * Copyright (C) 2006-2010 Rod Roark <rod@sunsetsystems.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://opensource.org/licenses/gpl-license.php.
+ *
+ * LICENSE: This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
+ * See the Mozilla Public License for more details.
+ * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * @package LibreHealth EHR
+ * @author Rod Roark <rod@sunsetsystems.com>
+ * @author Terry Hill <teryhill@librehealth.io>
+ * @link http://librehealth.io
+ *
+ * Please help the overall project by sending changes you make to the author and to the LibreHealth EHR community.
+ *
+ */
 
  //SANITIZE ALL ESCAPES
  $sanitize_all_escapes=true;
@@ -19,6 +42,7 @@
  require_once("$srcdir/options.inc.php");
  require_once("$srcdir/formdata.inc.php");
  require_once("$srcdir/htmlspecialchars.inc.php");
+ require_once("$srcdir/headers.inc.php");
 
  // Collect user id if editing entry
  $userid = $_REQUEST['userid'];
@@ -40,6 +64,7 @@
 <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>
 <link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
 <script type="text/javascript" src="../../library/js/jquery.1.3.2.js"></script>
+<script type="text/javascript" src="../../library/js/input_validate.js"></script>
 
 <style>
 td { font-size:10pt; }
@@ -65,7 +90,7 @@ td { font-size:10pt; }
   // 2 = Person Centric
   // 3 = Company Centric
   $sql = sqlStatement("SELECT option_id, option_value FROM list_options WHERE " .
-   "list_id = 'abook_type'");
+   "list_id = 'abook_type' AND activity = 1");
   while ($row_query = sqlFetchArray($sql)) {
    echo "type_options_js"."['" . attr($row_query['option_id']) . "']=" . attr($row_query['option_value']) . ";\n";
   }
@@ -119,6 +144,7 @@ td { font-size:10pt; }
   $form_fname = invalue('form_director_fname');
   $form_lname = invalue('form_director_lname');
   $form_mname = invalue('form_director_mname');
+  $form_suffix = invalue('form_director_suffix');
  }
  else {
   // Person centric
@@ -126,6 +152,7 @@ td { font-size:10pt; }
   $form_fname = invalue('form_fname');
   $form_lname = invalue('form_lname');
   $form_mname = invalue('form_mname');
+  $form_suffix = invalue('form_suffix');
  }
 
   if ($userid) {
@@ -136,6 +163,8 @@ td { font-size:10pt; }
     "fname = "        . $form_fname                  . ", " .
     "lname = "        . $form_lname                  . ", " .
     "mname = "        . $form_mname                  . ", " .
+    "suffix = "       . $form_suffix                 . ", " .
+    "billname= "      . invalue('form_billname')     . ", " .
     "specialty = "    . invalue('form_specialty')    . ", " .
     "organization = " . invalue('form_organization') . ", " .
     "valedictory = "  . invalue('form_valedictory')  . ", " .
@@ -144,7 +173,7 @@ td { font-size:10pt; }
     "upin = "         . invalue('form_upin')         . ", " .
     "npi = "          . invalue('form_npi')          . ", " .
     "taxonomy = "     . invalue('form_taxonomy')     . ", " .
-	"cpoe = "         . invalue('form_cpoe')         . ", " .    
+    "cpoe = "         . invalue('form_cpoe')         . ", " .    
     "email = "        . invalue('form_email')        . ", " .
     "email_direct = " . invalue('form_email_direct') . ", " .
     "url = "          . invalue('form_url')          . ", " .
@@ -167,11 +196,11 @@ td { font-size:10pt; }
     "WHERE id = '" . add_escape_custom($userid) . "'";
     sqlStatement($query);
 
-  } else {
+  } else {    
 
    $userid = sqlInsert("INSERT INTO users ( " .
     "username, password, authorized, info, source, " .
-    "title, fname, lname, mname,  " .
+    "title, fname, lname, mname, suffix,  " .
     "federaltaxid, federaldrugid, upin, facility, see_auth, active, npi, taxonomy, cpoe, " .
     "specialty, organization, valedictory, assistant, billname, email, email_direct, url, " .
     "street, streetb, city, state, zip, " .
@@ -187,6 +216,7 @@ td { font-size:10pt; }
     $form_fname                   . ", " .
     $form_lname                   . ", " .
     $form_mname                   . ", " .
+    $form_suffix                   . ", " .
     invalue('form_federaltaxid')  . ", " .
     "'', "                               . // federaldrugid
     invalue('form_upin')          . ", " .
@@ -195,12 +225,12 @@ td { font-size:10pt; }
     "1, "                                . // active
     invalue('form_npi')           . ", " .
     invalue('form_taxonomy')      . ", " .
-	invalue('form_cpoe')          . ", " .
+    invalue('form_cpoe')          . ", " .
     invalue('form_specialty')     . ", " .
     invalue('form_organization')  . ", " .
     invalue('form_valedictory')   . ", " .
     invalue('form_assistant')     . ", " .
-    "'', "                               . // billname
+    invalue('form_billname')      . ", " . // billname
     invalue('form_email')         . ", " .
     invalue('form_email_direct')  . ", " .
     invalue('form_url')           . ", " .
@@ -222,7 +252,7 @@ td { font-size:10pt; }
     invalue('form_notes')         . ", " .
     invalue('form_abook_type')    . " "  .
    ")");
-
+        
   }
  }
 
@@ -260,7 +290,8 @@ td { font-size:10pt; }
  $(document).ready(function() {
   // customize the form via the type options
   typeSelect("<?php echo attr($row['abook_type']); ?>");
-  if(abook_type == 'ord_lab') {
+  //making changes to reflect appropriate value of type selcted.
+  if(typeof abook_type != 'undefined' && abook_type == 'ord_lab'){
     $('#cpoe_span').css('display','inline');
    }
  });
@@ -288,19 +319,26 @@ td { font-size:10pt; }
 <?php
  generate_form_field(array('data_type'=>1,'field_id'=>'title','list_id'=>'titles','empty_title'=>' '), $row['title']);
 ?>
-   <b><?php echo xlt('Last'); ?>:</b><input type='text' size='10' name='form_lname' class='inputtext'
-     maxlength='50' value='<?php echo attr($row['lname']); ?>'/>&nbsp;
-   <b><?php echo xlt('First'); ?>:</b> <input type='text' size='10' name='form_fname' class='inputtext'
-     maxlength='50' value='<?php echo attr($row['fname']); ?>' />&nbsp;
-   <b><?php echo xlt('Middle'); ?>:</b> <input type='text' size='4' name='form_mname' class='inputtext'
-     maxlength='50' value='<?php echo attr($row['mname']); ?>' />
+   &nbsp;&nbsp;&nbsp;<b><?php echo xlt('Last'); ?>:</b>&nbsp;&nbsp;&nbsp;<input type='entry' size='10' name='form_lname' class='inputtext'
+     maxlength='50' value='<?php echo attr($row['lname']); ?>'/>&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('First'); ?>:</b>&nbsp;&nbsp;&nbsp; <input type='entry' size='10' name='form_fname' class='inputtext'
+     maxlength='50' value='<?php echo attr($row['fname']); ?>' />&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('Middle'); ?>:</b>&nbsp;&nbsp;&nbsp; <input type='entry' size='4' name='form_mname' class='inputtext'
+     maxlength='50' value='<?php echo attr($row['mname']); ?>' />&nbsp;&nbsp;&nbsp;
+
+   <b><?php echo xlt('Suffix'); ?>:</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <input type='entry' size='8' name='form_suffix' class='inputtext'
+     maxlength='50' value='<?php echo attr($row['suffix']); ?>' />&nbsp;&nbsp;&nbsp;
   </td>
  </tr>
+ <tr>
+   <td nowrap><b><?php echo xlt('Resource Name'); ?>:</b></td>&nbsp;&nbsp;&nbsp; <td><input type='entry' size='10' name='form_billname' class='inputtext'
+     maxlength='50' value='<?php echo attr($row['billname']); ?>' /></td>
+</tr>
 
  <tr id="specialtyRow">
   <td nowrap><b><?php echo xlt('Specialty'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_specialty' maxlength='250'
+   <input type='entry' size='40' name='form_specialty' maxlength='250'
     value='<?php echo attr($row['specialty']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -309,12 +347,12 @@ td { font-size:10pt; }
  <tr>
   <td nowrap><b><?php echo xlt('Organization'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_organization' maxlength='250'
+   <input type='entry' size='40' name='form_organization' maxlength='250'
     value='<?php echo attr($row['organization']); ?>'
     style='width:100%' class='inputtext' />
-	<span id='cpoe_span' style="display:none;">
-		<input type='checkbox' title="<?php echo xla('CPOE'); ?>" name='form_cpoe' id='form_cpoe' value='1' <?php if($row['cpoe']=='1') echo "CHECKED"; ?>/>
-		<label for='form_cpoe'><b><?php echo xlt('CPOE'); ?></b></label>
+    <span id='cpoe_span' style="display:none;">
+        <input type='checkbox' title="<?php echo xla('CPOE'); ?>" name='form_cpoe' id='form_cpoe' value='1' <?php if($row['cpoe']=='1') echo "CHECKED"; ?>/>
+        <label for='form_cpoe'><b><?php echo xlt('CPOE'); ?></b></label>
    </span>
   </td>
  </tr>
@@ -325,19 +363,21 @@ td { font-size:10pt; }
 <?php
  generate_form_field(array('data_type'=>1,'field_id'=>'director_title','list_id'=>'titles','empty_title'=>' '), $row['title']);
 ?>
-   <b><?php echo xlt('Last'); ?>:</b><input type='text' size='10' name='form_director_lname' class='inputtext'
+   <b><?php echo xlt('Last'); ?>:</b><input type='entry' size='10' name='form_director_lname' class='inputtext'
      maxlength='50' value='<?php echo attr($row['lname']); ?>'/>&nbsp;
-   <b><?php echo xlt('First'); ?>:</b> <input type='text' size='10' name='form_director_fname' class='inputtext'
+   <b><?php echo xlt('First'); ?>:</b> <input type='entry' size='10' name='form_director_fname' class='inputtext'
      maxlength='50' value='<?php echo attr($row['fname']); ?>' />&nbsp;
-   <b><?php echo xlt('Middle'); ?>:</b> <input type='text' size='4' name='form_director_mname' class='inputtext'
+   <b><?php echo xlt('Middle'); ?>:</b> <input type='entry' size='4' name='form_director_mname' class='inputtext'
      maxlength='50' value='<?php echo attr($row['mname']); ?>' />
+   <b><?php echo xlt('Suffix'); ?>:</b> <input type='entry' size='8' name='form_director_suffix' class='inputtext'
+     maxlength='50' value='<?php echo attr($row['suffix']); ?>' />
   </td>
  </tr>
 
  <tr>
   <td nowrap><b><?php echo xlt('Valedictory'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_valedictory' maxlength='250'
+   <input type='entry' size='40' name='form_valedictory' maxlength='250'
     value='<?php echo attr($row['valedictory']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -346,29 +386,30 @@ td { font-size:10pt; }
  <tr>
   <td nowrap><b><?php echo xlt('Home Phone'); ?>:</b></td>
   <td>
-   <input type='text' size='11' name='form_phone' value='<?php echo attr($row['phone']); ?>'
-    maxlength='30' class='inputtext' />&nbsp;
-   <b><?php echo xlt('Mobile'); ?>:</b><input type='text' size='11' name='form_phonecell'
-    maxlength='30' value='<?php echo attr($row['phonecell']); ?>' class='inputtext' />
+   <input type='tel' size='15' name='form_phone' onblur="validate(this.form,this.name,'tel')" value='<?php echo attr($row['phone']); ?>'
+    title='<?php echo xla("Example (123)456-7890") #at some point we need to make these phone number tips a settable variable ?>' maxlength='30' class='inputtext' />&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('Mobile'); ?>:</b> &nbsp;&nbsp;&nbsp;<input type='tel' size='15' onblur="validate(this.form,this.name,'tel')" name='form_phonecell'
+    title='<?php echo xla("Example (123)456-7890") ?>' maxlength='30' 
+    <?php echo ($GLOBALS['phone_country_code'] == '1') ? xl('State','e') : xl('Locality','e') ?>: value='<?php echo attr($row['phonecell']); ?>' class='inputtext' />
   </td>
  </tr>
 
  <tr>
   <td nowrap><b><?php echo xlt('Work Phone'); ?>:</b></td>
   <td>
-   <input type='text' size='11' name='form_phonew1' value='<?php echo attr($row['phonew1']); ?>'
-    maxlength='30' class='inputtext' />&nbsp;
-   <b><?php echo xlt('2nd'); ?>:</b><input type='text' size='11' name='form_phonew2' value='<?php echo attr($row['phonew2']); ?>'
-    maxlength='30' class='inputtext' />&nbsp;
-   <b><?php echo xlt('Fax'); ?>:</b> <input type='text' size='11' name='form_fax' value='<?php echo attr($row['fax']); ?>'
-    maxlength='30' class='inputtext' />
+   <input type='tel' size='15' name='form_phonew1' onblur="validate(this.form,this.name,'tel')" value='<?php echo attr($row['phonew1']); ?>'
+    title='<?php echo xla("Example (123)456-7890") ?>' maxlength='30' class='inputtext' />&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('2nd'); ?>:</b>&nbsp;&nbsp;&nbsp; <input type='tel' size='15' name='form_phonew2' onblur="validate(this.form,this.name,'tel')"  value='<?php echo attr($row['phonew2']); ?>'
+    title='<?php echo xla("Example (123)456-7890") ?>' maxlength='30' class='inputtext' />&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('Fax'); ?>:</b>&nbsp;&nbsp;&nbsp; <input type='tel' size='15' name='form_fax' onblur="validate(this.form,this.name,'tel')" value='<?php echo attr($row['fax']); ?>'
+    title='<?php echo xla("Example (123)456-7890") #at some point we need to make these phone number tips a settable variable ?>' maxlength='30' class='inputtext' />
   </td>
  </tr>
 
  <tr>
   <td nowrap><b><?php echo xlt('Assistant'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_assistant' maxlength='250'
+   <input type='entry' size='40' name='form_assistant' maxlength='250'
     value='<?php echo attr($row['assistant']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -377,7 +418,7 @@ td { font-size:10pt; }
  <tr>
   <td nowrap><b><?php echo xlt('Email'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_email' maxlength='250'
+   <input type='entry' size='40' name='form_email' onblur="validate(this.form,this.name,'email')" maxlength='250'
     value='<?php echo attr($row['email']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -386,7 +427,7 @@ td { font-size:10pt; }
  <tr>
   <td nowrap><b><?php echo xlt('Trusted Email'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_email_direct' maxlength='250'
+   <input type='entry' size='40' name='form_email_direct' onblur="validate(this.form,this.name,'email')" maxlength='250'
     value='<?php echo attr($row['email_direct']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -395,7 +436,7 @@ td { font-size:10pt; }
  <tr>
   <td nowrap><b><?php echo xlt('Website'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_url' maxlength='250'
+   <input type='entry' size='40' name='form_url' onblur="validate(this.form,this.name,'url')" maxlength='250'
     value='<?php echo attr($row['url']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -404,7 +445,7 @@ td { font-size:10pt; }
  <tr>
   <td nowrap><b><?php echo xlt('Main Address'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_street' maxlength='60'
+   <input type='entry' size='40' name='form_street' maxlength='60'
     value='<?php echo attr($row['street']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -413,7 +454,7 @@ td { font-size:10pt; }
  <tr>
   <td nowrap>&nbsp;</td>
   <td>
-   <input type='text' size='40' name='form_streetb' maxlength='60'
+   <input type='entry' size='40' name='form_streetb' maxlength='60'
     value='<?php echo attr($row['streetb']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -422,11 +463,11 @@ td { font-size:10pt; }
  <tr>
   <td nowrap><b><?php echo xlt('City'); ?>:</b></td>
   <td>
-   <input type='text' size='10' name='form_city' maxlength='30'
-    value='<?php echo attr($row['city']); ?>' class='inputtext' />&nbsp;
-   <b><?php echo xlt('State')."/".xlt('county'); ?>:</b> <input type='text' size='10' name='form_state' maxlength='30'
-    value='<?php echo attr($row['state']); ?>' class='inputtext' />&nbsp;
-   <b><?php echo xlt('Postal code'); ?>:</b> <input type='text' size='10' name='form_zip' maxlength='20'
+   <input type='entry' size='10' name='form_city' maxlength='30'
+    value='<?php echo attr($row['city']); ?>' class='inputtext' />&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('State')."/".xlt('County'); ?>:</b>&nbsp;&nbsp;&nbsp; <input type='entry' size='10' name='form_state' maxlength='30'
+    value='<?php echo attr($row['state']); ?>' class='inputtext' />&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('Postal code'); ?>:</b>&nbsp;&nbsp;&nbsp; <input type='entry' size='10' name='form_zip' maxlength='20'
     value='<?php echo attr($row['zip']); ?>' class='inputtext' />
   </td>
  </tr>
@@ -434,7 +475,7 @@ td { font-size:10pt; }
  <tr>
   <td nowrap><b><?php echo xlt('Alt Address'); ?>:</b></td>
   <td>
-   <input type='text' size='40' name='form_street2' maxlength='60'
+   <input type='entry' size='40' name='form_street2' maxlength='60'
     value='<?php echo attr($row['street2']); ?>'
     style='width:100%' class='inputtext' />
   </td>
@@ -443,34 +484,21 @@ td { font-size:10pt; }
  <tr>
   <td nowrap>&nbsp;</td>
   <td>
-   <input type='text' size='40' name='form_streetb2' maxlength='60'
+   <input type='entry' size='40' name='form_streetb2' maxlength='60'
     value='<?php echo attr($row['streetb2']); ?>'
     style='width:100%' class='inputtext' />
   </td>
  </tr>
 
- <tr>
-  <td nowrap><b><?php echo xlt('City'); ?>:</b></td>
-  <td>
-   <input type='text' size='10' name='form_city2' maxlength='30'
-    value='<?php echo attr($row['city2']); ?>' class='inputtext' />&nbsp;
-   <b><?php echo xlt('State')."/".xlt('county'); ?>:</b> <input type='text' size='10' name='form_state2' maxlength='30'
-    value='<?php echo attr($row['state2']); ?>' class='inputtext' />&nbsp;
-   <b><?php echo xlt('Postal code'); ?>:</b> <input type='text' size='10' name='form_zip2' maxlength='20'
-    value='<?php echo attr($row['zip2']); ?>' class='inputtext' />
-  </td>
- </tr>
 
  <tr>
-  <td nowrap><b><?php echo xlt('UPIN'); ?>:</b></td>
+  <td nowrap><b><?php echo xlt('NPI'); ?>:</b></td>
   <td>
-   <input type='text' size='6' name='form_upin' maxlength='6'
-    value='<?php echo attr($row['upin']); ?>' class='inputtext' />&nbsp;
-   <b><?php echo xlt('NPI'); ?>:</b> <input type='text' size='10' name='form_npi' maxlength='10'
-    value='<?php echo attr($row['npi']); ?>' class='inputtext' />&nbsp;
-   <b><?php echo xlt('TIN'); ?>:</b> <input type='text' size='10' name='form_federaltaxid' maxlength='10'
-    value='<?php echo attr($row['federaltaxid']); ?>' class='inputtext' />&nbsp;
-   <b><?php echo xlt('Taxonomy'); ?>:</b> <input type='text' size='10' name='form_taxonomy' maxlength='10'
+   <input type='entry' size='10' name='form_npi' maxlength='10'
+    value='<?php echo attr($row['npi']); ?>' class='inputtext' />&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('TIN'); ?>:</b>&nbsp;&nbsp;&nbsp; <input type='entry' size='10' name='form_federaltaxid' maxlength='10'
+    value='<?php echo attr($row['federaltaxid']); ?>' class='inputtext' />&nbsp;&nbsp;&nbsp;
+   <b><?php echo xlt('Taxonomy'); ?>:</b>&nbsp;&nbsp;&nbsp; <input type='entry' size='10' name='form_taxonomy' maxlength='10'
     value='<?php echo attr($row['taxonomy']); ?>' class='inputtext' />
   </td>
  </tr>
@@ -487,15 +515,15 @@ td { font-size:10pt; }
 
 <br />
 
-<input type='submit' name='form_save' value='<?php echo xla('Save'); ?>' />
+<input type='submit' name='form_save' class='cp-submit' value='<?php echo xla('Save'); ?>' />
 
 <?php if ($userid && !$row['username']) { ?>
 &nbsp;
-<input type='submit' name='form_delete' value='<?php echo xla('Delete'); ?>' style='color:red' />
+<input type='submit' name='form_delete' class='cp-negative' value='<?php echo xla('Delete'); ?>' style='color:red' />
 <?php } ?>
 
 &nbsp;
-<input type='button' value='<?php echo xla('Cancel'); ?>' onclick='window.close()' />
+<input type='button' class='cp-negative' value='<?php echo xla('Cancel'); ?>' onclick='window.close()' />
 </p>
 
 </center>

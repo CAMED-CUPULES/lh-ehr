@@ -1,6 +1,6 @@
 <?php
 /**
- * The outside frame that holds all of the LibreEHR User Interface.
+ * The outside frame that holds all of the LibreHealth EHR User Interface.
  *
  * LICENSE: This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author  Brady Miller <brady@sparmy.com>
  * @link    http://librehealth.io
  */
@@ -24,13 +24,14 @@ $sanitize_all_escapes=true;
 /* Include our required headers */
 require_once('../globals.php');
 require_once("$srcdir/formdata.inc.php");
+require_once("../../library/CsrfToken.php");
 
 // Creates a new session id when load this outer frame
-// (allows creations of separate LibreEHR frames to view patients concurrently
+// (allows creations of separate LibreHealth EHR frames to view patients concurrently
 //  on different browser frame/windows)
 // This session id is used below in the restoreSession.php include to create a
-// session cookie for this specific LibreEHR instance that is then maintained
-// within the LibreEHR instance by calling top.restoreSession() whenever
+// session cookie for this specific LibreHealth EHR instance that is then maintained
+// within the LibreHealth EHR instance by calling top.restoreSession() whenever
 // refreshing or starting a new script.
 if (isset($_POST['new_login_session_management'])) {
   // This is a new login, so create a new session id and remove the old session
@@ -40,6 +41,9 @@ else {
   // This is not a new login, so create a new session id and do NOT remove the old session
   session_regenerate_id(false);
 }
+
+//generate csrf token
+$_SESSION['token'] = CsrfToken::generateCsrfToken();
 
 $_SESSION["encounter"] = '';
 
@@ -85,23 +89,28 @@ else if (!empty($_POST['patientID'])) {
 }
 
 else if (isset($_GET['mode']) && $_GET['mode'] == "loadcalendar") {
-  $frame1url = "calendar/index.php?pid=" . attr($_GET['pid']);
+  $frame1url = "../../modules/calendar/index.php?pid=" . attr($_GET['pid']);
   if (isset($_GET['date'])) $frame1url .= "&date=" . attr($_GET['date']);
 }
-else if ($GLOBALS['concurrent_layout']) {
-  // This is not meant to be a valid URL, it is a place holder so that the default can be loaded after the user specific globals have been loaded
-  // The default for the tab will be set in tabs/main.php where there will be a check for this placeholder of "TAB_ONE_DEFAULT"
-  // When globals are loaded at the top of this page, the user hasn't been established yet, so user specific settings don't work
+else {
   $frame1url = "TAB_ONE_DEFAULT"; 
 }
-else {
-  // old layout
-  $frame1url = "main.php?mode=" . attr($_GET['mode']);
-}
 
-$nav_area_width = '130';
-if (!empty($GLOBALS['gbl_nav_area_width'])) $nav_area_width = $GLOBALS['gbl_nav_area_width'];
-require_once("tabs/redirect.php");
+
+$username = (isset($_POST['authUser'])) ? $_POST['authUser'] : '';
+$check_fullscreen = sqlStatement("select fullscreen_enable from users where username = ?", array($username));
+$row = sqlFetchArray($check_fullscreen);
+//echo $row["fullscreen_enable"];
+if($row) {
+  if($row["fullscreen_enable"] == 1) {
+    $fullscreen_url = $web_root."/interface/main/tabs/fullscreen.php?url=TAB_ONE_DEFAULT";
+    header('Location: '.$fullscreen_url);
+    exit();
+  } else {
+    require_once("tabs/redirect.php");
+  }
+}
+//require_once("tabs/redirect.php");
 ?>
 <html>
 <head>
@@ -142,68 +151,5 @@ $sidebar_tpl = "<frameset rows='*,0' frameborder='0' border='0' framespacing='0'
 $main_tpl = "<frameset rows='60%,*' id='fsright' bordercolor='#999999' frameborder='1'>" ;
 $main_tpl .= "<frame src='". $frame1url ."' name='RTop' scrolling='auto' />
    <frame src='messages/messages.php?form_active=1' name='RBot' scrolling='auto' /></frameset>";
-// Please keep in mind that border (mozilla) and framespacing (ie) are the
-// same thing. use both.
-// frameborder specifies a 3d look, not whether there are borders.
-
-if ($GLOBALS['concurrent_layout']) {
-  // start new layout
-  if (empty($GLOBALS['gbl_tall_nav_area'])) {
-    // not tall nav area ?>
-<frameset rows='<?php echo attr($GLOBALS['titleBarHeight']) + 5 ?>,*' frameborder='1' border='1' framespacing='1' onunload='imclosing()'>
- <frame src='main_title.php' name='Title' scrolling='no' frameborder='1' noresize />
- <?php if($lang_dir != 'rtl'){ ?>
- 
-     <frameset cols='<?php echo attr($nav_area_width) . ',*'; ?>' id='fsbody' frameborder='1' border='4' framespacing='4'>
-     <?php echo $sidebar_tpl ?>
-     <?php echo $main_tpl ?>
-     </frameset>
- 
- <?php }else{ ?>
- 
-     <frameset cols='<?php echo  '*,' . attr($nav_area_width); ?>' id='fsbody' frameborder='1' border='4' framespacing='4'>
-     <?php echo $main_tpl ?>
-     <?php echo $sidebar_tpl ?>
-     </frameset>
- 
- <?php }?>
-   
- </frameset>
-</frameset>
-
-<?php } else { // use tall nav area ?>
-
-<frameset cols='<?php echo attr($nav_area_width); ?>,*' id='fsbody' frameborder='1' border='4' framespacing='4' onunload='imclosing()'>
- <frameset rows='*,0' frameborder='0' border='0' framespacing='0'>
-  <frame src='left_nav.php' name='left_nav' />
-  <frame src='daemon_frame.php' name='Daemon' scrolling='no' frameborder='0'
-   border='0' framespacing='0' />
- </frameset>
- <frameset rows='<?php echo attr($GLOBALS['titleBarHeight']) + 5 ?>,*' frameborder='1' border='1' framespacing='1'>
-  <frame src='main_title.php' name='Title' scrolling='no' frameborder='1' />
-  <frameset rows='60%,*' id='fsright' bordercolor='#999999' frameborder='1' border='4' framespacing='4'>
-   <frame src='<?php echo $frame1url ?>' name='RTop' scrolling='auto' />
-   <frame src='messages/messages.php?form_active=1' name='RBot' scrolling='auto' />
-  </frameset>
- </frameset>
-</frameset>
-
-<?php } // end tall nav area ?>
-
-<?php } else { // start old layout ?>
-
-</head>
-<frameset rows="<?php echo attr($GLOBALS[navBarHeight]).",".attr($GLOBALS[titleBarHeight]) ?>,*"
-  cols="*" frameborder="no" border="0" framespacing="0"
-  onunload="imclosing()">
-  <frame src="main_navigation.php" name="Navigation" scrolling="no" noresize frameborder="no">
-  <frame src="main_title.php" name="Title" scrolling="no" noresize frameborder="no">
-  <frame src='<?php echo $frame1url ?>' name='Main' scrolling='auto' noresize frameborder='no'>
-</frameset>
-<noframes><body bgcolor="#FFFFFF">
-<?php echo xlt('Frame support required'); ?>
-</body></noframes>
-
-<?php } // end old layout ?>
-
+?>
 </html>

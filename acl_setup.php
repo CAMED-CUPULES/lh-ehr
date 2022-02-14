@@ -6,7 +6,7 @@
  // as published by the Free Software Foundation; either version 2
  // of the License, or (at your option) any later version.
  //
- // This program is run by the LibreEHR setup.php script to install phpGACL
+ // This program is run by the LibreHealth EHR setup.php script to install phpGACL
  // and creates the Access Control Objects and their sections.
  // See libreehr/library/acl.inc file for the list of
  // currently supported Access Control Objects(ACO), which this
@@ -21,7 +21,7 @@
  //      Accounting
  //
  // Upgrade Howto
- // When upgrading to a new version of LibreEHR, run the acl_upgrade.php
+ // When upgrading to a new version of LibreHealth EHR, run the acl_upgrade.php
  // script to update the phpGACL access controls.  This is required to
  // ensure the database includes all the required Access Control 
  // Objects(ACO).
@@ -41,7 +41,7 @@
  // Create the ACO sections.  Every ACO must have a section.
  //
  if ($gacl->add_object_section('Accounting', 'acct', 10, 0, 'ACO') === FALSE) {
-  echo "Unable to create the access controls for LibreEHR.  You have likely already run this script (acl_setup.php) successfully.<br>Other possible problems include php-GACL configuration file errors (gacl.ini.php or gacl.class.php).<br>";
+  echo "Unable to create the access controls for LibreHealth EHR.  You have likely already run this script (acl_setup.php) successfully.<br>Other possible problems include php-GACL configuration file errors (gacl.ini.php or gacl.class.php).<br>";
   return;
  }
      // xl('Accounting')
@@ -59,8 +59,6 @@
      // xl('Sensitivities')
  $gacl->add_object_section('Placeholder'   , 'placeholder'  , 10, 0, 'ACO');
      // xl('Placeholder')
- $gacl->add_object_section('Nation Notes'   , 'nationnotes'  , 10, 0, 'ACO');
-     // xl('Nation Notes')
  $gacl->add_object_section('Patient Portal','patientportal'  , 10, 0, 'ACO');
      // xl('Patient Portal')
   $gacl->add_object_section('Menus','menus'  , 10, 0, 'ACO');
@@ -174,10 +172,6 @@
  $gacl->add_object('placeholder', 'Placeholder (Maintains empty ACLs)', 'filler', 10, 0, 'ACO');
      // xl('Placeholder (Maintains empty ACLs)')
      
- // Create ACO for nationnotes.
- //
- $gacl->add_object('nationnotes', 'Nation Notes Configure', 'nn_configure', 10, 0, 'ACO');
-     // xl('Nation Notes Configure')
 
  // Create ARO groups.
  //
@@ -195,6 +189,8 @@
      // xl('Accounting')
 $breakglass  = $gacl->add_group('breakglass' , 'Emergency Login'    , $users, 'ARO');
      // xl('Emergency Login')
+$pqrsreporter = $gacl->add_group('pqrsreporter',  'MIPS Reporter',   $users, 'ARO');
+	// xl('PQRS Reporter')
 
 
  // Create a Users section for the AROs (humans).
@@ -204,7 +200,7 @@ $breakglass  = $gacl->add_group('breakglass' , 'Emergency Login'    , $users, 'A
 
  // Create the Administrator in the above-created "users" section
  // and add him/her to the above-created "admin" group.
- // If this script is being used by LibreEHR's setup, then will
+ // If this script is being used by LibreHealth EHR's setup, then will
  //   incorporate the installation values. Otherwise will
 //    hardcode the 'admin' user.
  if (isset($this) && isset($this->iuser)) {
@@ -229,7 +225,6 @@ $breakglass  = $gacl->add_group('breakglass' , 'Emergency Login'    , $users, 'A
    'lists'=>array('default','state','country','language','ethrace'),
    'patients'=>array('appt', 'demo', 'med', 'trans', 'docs', 'notes'),
    'sensitivities'=>array('normal', 'high'),
-   'nationnotes'=>array('nn_configure'),
    'patientportal'=>array('portal'),
    'menus'=>array('modle')
   ),
@@ -390,6 +385,47 @@ $breakglass  = $gacl->add_group('breakglass' , 'Emergency Login'    , $users, 'A
  );
      // xl('Things that back office can read and modify')
 
+
+// Set permissions for MIPS reporters.
+//
+$gacl->add_acl(
+	array(
+		'placeholder' => array('filler')
+	),
+	NULL, array($pqrsreporter), NULL, NULL,
+	1, 1, 'view', 'Things that PQRS reporters can only read'
+);
+	// xl('Things that MIPS reporters can only read')
+$gacl->add_acl(
+	array(
+		'placeholder' => array('filler')
+	),
+	NULL, array($pqrsreporter), NULL, NULL,
+	1, 1, 'addonly', 'Things that MIPS reporters can read and enter but not modify'
+);
+	// xl('Things that MIPS reporters can read and enter but not modify')
+$gacl->add_acl(
+	array(
+		'placeholder' => array('filler')
+	),
+	NULL, array($pqrsreporter), NULL, NULL,
+	1, 1, 'wsome', 'Things that MIPS reporters can read and partly modify'
+);
+	// xl('Things that MIPS reporters can read and partly modify')
+$gacl->add_acl(
+	array(
+		'acct' => array('disc', 'rep'),
+		'admin' => array('drugs'),
+		'encounters' => array('auth_a', 'coding_a', 'notes_a', 'date_a'),
+		'patients' => array('appt', 'demo', 'med', 'trans', 'docs', 'notes', 'sign'),
+		'sensitivities' => array('normal', 'high')
+	),
+	NULL, array($pqrsreporter), NULL, NULL,
+	1, 1, 'write', 'Things that MIPS reporters can read and modify'
+);
+	// xl('Things that MIPS reporters can read and modify')
+
+
  // Set permissions for Emergency Login.
  //
  $gacl->add_acl(
@@ -400,7 +436,6 @@ $breakglass  = $gacl->add_group('breakglass' , 'Emergency Login'    , $users, 'A
    'lists'=>array('default','state','country','language','ethrace'),
    'patients'=>array('appt', 'demo', 'med', 'trans', 'docs', 'notes'),
    'sensitivities'=>array('normal', 'high'),
-   'nationnotes'=>array('nn_configure'),
    'patientportal'=>array('portal'),
    'menus'=>array('modle')
   ),
@@ -412,11 +447,11 @@ $breakglass  = $gacl->add_group('breakglass' , 'Emergency Login'    , $users, 'A
 ?>
 <html>
 <head>
-<title>LibreEHR ACL Setup</title>
-<link rel=STYLESHEET href="interface/themes/style_blue.css">
+<title>LibreHealth EHR ACL Setup</title>
+<link rel=STYLESHEET href="interface/themes/style_setup.css">
 </head>
 <body>
-<b>LibreEHR ACL Setup</b>
+<b>LibreHealth EHR ACL Setup</b>
 <br>
 All done configuring and installing access controls (php-GACL)!
 </body>

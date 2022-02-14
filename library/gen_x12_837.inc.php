@@ -20,7 +20,7 @@
  * See the Mozilla Public License for more details.
  * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author Rod Roark <rod@sunsetsystems.com>
  * @author Terry Hill <terry@lilysystems.com>
  * @link http://librehealth.io
@@ -128,9 +128,9 @@ $CMS_5010 = true;
         $middleName = $partsName[1];
         $lastName = $partsName[2];
         $suffixName = $partsName[3];
-    } 
+    }
     $out .= "NM1" . // Loop 1000A Submitter
-    "*41" . 
+    "*41" .
     "*1" .
     "*" . $lastName .
     "*" . $firstName .
@@ -140,8 +140,8 @@ $CMS_5010 = true;
     "*46";
   } else {    //Field length is limited to 35. See nucc dataset page 63 www.nucc.org
     $billingFacilityName = substr($claim->billingFacilityName(), 0, 60 );
-    if ($billingFacilityName == '') $log .= "*** billing facility name in 1000A loop is empty\n";  
-    $out .= "NM1" .       
+    if ($billingFacilityName == '') $log .= "*** billing facility name in 1000A loop is empty\n";
+    $out .= "NM1" .
     "*41" .
     "*2" .
     "*" . $billingFacilityName .
@@ -199,7 +199,7 @@ $CMS_5010 = true;
  #       "*" . $claim->providerTaxonomy() .
  #       "~\n";
  #   }
-    
+
   // Situational CUR segment (foreign currency information) omitted here.
 
   ++$edicount;
@@ -233,7 +233,7 @@ $CMS_5010 = true;
         $middleName = $partsName[1];
         $lastName = $partsName[2];
         $suffixName = $partsName[3];
-    } 
+    }
   $out .= "NM1" .
   "*85" .
   "*1" .
@@ -245,7 +245,7 @@ $CMS_5010 = true;
   }
   else {
     $billingFacilityName = substr($claim->billingFacilityName(), 0,  60);
-    if ($billingFacilityName == '') $log .= "*** billing facility name in 2010A loop is empty\n";  
+    if ($billingFacilityName == '') $log .= "*** billing facility name in 2010A loop is empty\n";
     $out .= "NM1" . // Loop 2010AA Billing Provider
     "*85" .
     "*2" .
@@ -413,7 +413,7 @@ $CMS_5010 = true;
       "*" . $claim->payerState() .
       "*" . stripZipCode($claim->payerZip()) .
       "~\n";
-  
+
 //End ToDo section
 
   // Segment REF (Payer Secondary Identification) omitted.
@@ -494,11 +494,13 @@ $CMS_5010 = true;
     "*A" .
     "*"  . ($claim->billingFacilityAssignment() ? 'Y' : 'N') .
     "*Y" .
-    "~\n"; 
+    "~\n";
 
-  if ($claim->onsetDate() && 
+   // above is for old claims that use the encounter onset date field. Onset is now back in misc_billing_options
+
+  if ($claim->onsetDate() &&
       ($claim->onsetDate()!== $claim->serviceDate()) &&
-      ($claim->onsetDateValid()) 
+      ($claim->onsetDateValid())
      ) {
     ++$edicount;
     $out .= "DTP" .       // Date of Onset
@@ -508,24 +510,39 @@ $CMS_5010 = true;
       "~\n";
   }
 
-  if ($claim->dateInitialTreatment() && ($claim->onsetDateValid())) {
+    // Segment DTP*431 (Onset of Current Symptoms or Illness)
+    // Segment DTP*484 (Last Menstrual Period Date)
+
+    if ($claim->Onset_Date_Misc_Billing() && ($claim->box14Qualifier()) && ($claim->Onset_Date_Misc_Billing_Valid())) {
     ++$edicount;
-    $out .= "DTP" .       // Date of Initial Treatment
-      "*454" .
-      "*D8" .
+        $out .= "DTP" .       // Date Last Seen
+            "*" . $claim->box14Qualifier() .
+            "*" . "D8" .
+            "*" . $claim->Onset_Date_Misc_Billing() .
+            "~\n";
+    }
+
+    // Segment DTP*454 (Initial Treatment Date)
+    // Segment DTP*304 (Last Seen Date)
+    // Segment DTP*453 (Acute Manifestation Date)
+    // Segment DTP*439 (Accident Date)
+    // Segment DTP*455 (Last X-Ray Date)
+    // Segment DTP*471 (Hearing and Vision Prescription Date)
+    // Segment DTP*314 (Disability) omitted.
+    // Segment DTP*360 (Initial Disability Period Start) omitted.
+    // Segment DTP*361 (Initial Disability Period End) omitted.
+    // Segment DTP*297 (Last Worked Date)
+    // Segment DTP*296 (Authorized Return to Work Date)
+
+    if ($claim->dateInitialTreatment() && ($claim->box15Qualifier()) && ($claim->dateInitialTreatmentValid())) {
+    ++$edicount;
+        $out .= "DTP" .       // Date Last Seen
+        "*" . $claim->box15Qualifier() .
+        "*" . "D8" .
       "*" . $claim->dateInitialTreatment() .
       "~\n";
   }
 
-  // Segment DTP*304 (Last Seen Date) omitted.
-  // Segment DTP*453 (Acute Manifestation Date) omitted.
-  // Segment DTP*439 (Accident Date) omitted.
-  // Segment DTP*484 (Last Menstrual Period Date) omitted.
-  // Segment DTP*455 (Last X-Ray Date) omitted.
-  // Segment DTP*471 (Hearing and Vision Prescription Date) omitted.
-  // Segments DTP (Disability Dates) omitted.
-  // Segment DTP*297 (Last Worked Date) omitted.
-  // Segment DTP*296 (Authorized Return to Work Date) omitted.
 
   if (strcmp($claim->facilityPOS(),'21') == 0 && $claim->onsetDateValid() ) {
     ++$edicount;
@@ -535,8 +552,27 @@ $CMS_5010 = true;
       "*" . $claim->onsetDate() .
       "~\n";
   }
+  // Added hospital admit and discharge date for facility 21
 
-  // Segment DTP*096 (Discharge Date) omitted.
+    if (strcmp($claim->facilityPOS(), '21') == 0 && $claim->hospitalizedFromDateValid()) {
+        ++$edicount;
+        $out .= "DTP" .     // Date of Admission
+        "*" . "435" .
+        "*" . "D8" .
+        "*" . $claim->hospitalizedFrom() .
+        "~\n";
+    }
+
+    // Segment DTP*096 (Discharge Date)
+    if (strcmp($claim->facilityPOS(), '21') == 0 && $claim->hospitalizedToDateValid()) {
+        ++$edicount;
+        $out .= "DTP" .     // Date of Discharge
+        "*" . "096" .
+        "*" . "D8" .
+        "*" . $claim->hospitalizedTo() .
+        "~\n";
+    }
+
   // Segments DTP (Assumed and Relinquished Care Dates) omitted.
   // Segment DTP*444 (Property and Casualty Date of First Contact) omitted.
   // Segment DTP*050 (Repricer Received Date) omitted.
@@ -570,12 +606,11 @@ $CMS_5010 = true;
   #if($claim->billing_options['replacement_claim'] == '1'){
   if(trim($claim->billing_options['icn_resubmission_number']) > 3){
     ++$edicount;
-    error_log("Method 1: ".$claim->billing_options['icn_resubmission_number'], 0);
-    $out .= "REF" . 
+    $out .= "REF" .
       "*F8" .
       "*" . $claim->icnResubmissionNumber() .
-      "~\n";       
-  }   
+      "~\n";
+  }
 
 
   if ($claim->cliaCode()) {
@@ -614,8 +649,8 @@ $CMS_5010 = true;
   // Segment CRC (EPSDT Referral).
    if($claim->epsdtFlag()) {
       ++$edicount;
-    $out .= "CRC" . 
-      "*ZZ" . 
+    $out .= "CRC" .
+      "*ZZ" .
       "*Y" .
       "*" . $claim->medicaidReferralCode() .
       "~\n";
@@ -644,9 +679,9 @@ $CMS_5010 = true;
   // Segment HI*BG (Condition Information) omitted.
   // Segment HCP (Claim Pricing/Repricing Information) omitted.
 
-  if ($claim->referrerLastName() || $claim->providerQualifierCode() == "DN" ) {
-      
-    if ($claim->providerQualifierCode() == "DN") {  
+  if ($claim->referrerLastName() || $claim->providerQualifierCode() == "DN" || $claim->referringLastName() ) {
+
+    if ($claim->providerQualifierCode() == "DN") {
 
         // Getting Referrer information from Misc_Billing_form.
     ++$edicount;
@@ -660,9 +695,29 @@ $CMS_5010 = true;
       "*";
     $out .=
       "*XX" .
-      "*" . $claim->billingProviderNPI(). 
+      "*" . $claim->billingProviderNPI().
      "~\n";
-    } else {
+    } else if ( $claim->referringLastName()) {
+     # Use the Referrer information
+    // Medicare requires referring provider's name and UPIN.
+    ++$edicount;
+    $out .= "NM1" .     // Loop 2310A Referring Provider
+      "*DN" .
+      "*1" .
+      "*" . $claim->referringLastName() .
+      "*" . $claim->referringFirstName() .
+      "*" . $claim->referringMiddleName() .
+      "*" .
+      "*";
+    if ($CMS_5010 || $claim->referringNPI()) { $out .=
+      "*XX" .
+      "*" . $claim->referringNPI();
+    } else { $out .=
+      "*34" .                           // not allowed for 5010
+      "*" . $claim->referringSSN();
+    }
+    $out .= "~\n";
+    } else if ($claim->referrerLastName()) {
      # Use the Referrer information
     // Medicare requires referring provider's name and UPIN.
     ++$edicount;
@@ -676,17 +731,17 @@ $CMS_5010 = true;
       "*";
     $out .=
       "*XX" .
-      "*" . $claim->referrerNPI(). 
+      "*" . $claim->referrerNPI().
      "~\n";
 
   }
   }
 
-  
-  /* Per the implementation guide lines, only include this information if it is different 
+
+  /* Per the implementation guide lines, only include this information if it is different
    * than the Loop 2010AA information
    */
-  if($claim->providerNPIValid() && 
+  if($claim->providerNPIValid() &&
           $claim->billingFacilityNPI() !== $claim->providerNPI() )
   {
     ++$edicount;
@@ -725,9 +780,9 @@ $CMS_5010 = true;
     /* Skipping this segment because the providerNPI and the billingFacilityNPI are identical
      * is a normal condition, so no need to warn.
      */
-    
+
   }
-  
+
   // --- apparently ECLAIMS, INC wants the data in 2010 but NOT in 2310B - tony@mi-squared.com
   //
   // 5010 spec says nothing here if NPI was specified.
@@ -789,7 +844,7 @@ $CMS_5010 = true;
   // Loop 2310E, Supervising Provider
   //
   if ($claim->supervisorLastName() || $claim->providerQualifierCode() == "DQ") {
-     if ($claim->providerQualifierCode() == "DQ") { 
+     if ($claim->providerQualifierCode() == "DQ") {
       # the Supervising Physician is filled out the Misc Billing Form
       ++$edicount;
       $out .= "NM1" .
@@ -802,12 +857,12 @@ $CMS_5010 = true;
       "*".    // Name Suffix
       "*XX" .
       "*" . $claim->billingProviderNPI();
-    
+
       if (!$claim->billingProviderNPI()) {
         $log .= "*** Supervising Provider has no NPI.\n";
       }
     $out .= "~\n";
-    
+
      } else {
     # the Supervising Physician is filled out on the fee sheet
     ++$edicount;
@@ -821,7 +876,7 @@ $CMS_5010 = true;
       "*".    // Name Suffix
       "*XX" .
       "*" . $claim->supervisorNPI();
-    
+
     if (!$claim->supervisorNPI()) {
       $log .= "*** Supervising Provider has no NPI.\n";
     }
@@ -1018,16 +1073,16 @@ $CMS_5010 = true;
       $out .= $dindex;
       if (++$i >= 4) break;
     }
-    # needed for epstd 
+    # needed for epstd
   if($claim->epsdtFlag()) {
     $out .= "*" .
     "*" .
     "*" .
-    "*Y" .    
+    "*Y" .
     "~\n";
   }
   else
-  {      
+  {
     $out .= "~\n";
   }
 
@@ -1063,7 +1118,7 @@ $CMS_5010 = true;
         "*" . $claim->cptNotecodes($prockey) .
         "~\n";
     }
-      
+
     // Segment DTP*471 (Prescription Date) omitted.
     // Segment DTP*607 (Revision/Recertification Date) omitted.
     // Segment DTP*463 (Begin Therapy Date) omitted.
@@ -1156,7 +1211,7 @@ $CMS_5010 = true;
       }
 
 
-  }     
+  }
 
       // Segment PRV*PE (Rendering Provider Specialty Information) omitted.
       // Segment REF (Rendering Provider Secondary Identification) omitted.
@@ -1168,8 +1223,10 @@ $CMS_5010 = true;
       // Segment REF (Supervising Provider Secondary Identification) omitted.
       // Segment NM1,N3,N4 (Ordering Provider) Needs check against the misc bill qualifer code.
 
-   #Ordering provider from the Misc_Billing_form
+   #Ordering provider from the Misc_Billing_form or fee sheet
+   if ($claim->providerQualifierCode() == "DK" || $claim->orderingLastName() ) {
    if ($claim->providerQualifierCode() == "DK") {
+    # the Ordering Physician is filled out the Misc Billing Form
     ++$edicount;
     $out .= "NM1" .
       "*DK" . // DK is ordering
@@ -1187,6 +1244,26 @@ $CMS_5010 = true;
       $log .= "*** Ordering Provider has no NPI.\n";
     }
     $out .= "~\n";
+        } else {
+    # the Ordering Physician is filled out on the fee sheet
+    ++$edicount;
+    $out .= "NM1" .
+      "*DK" . // Ordering Physician
+      "*1" .  // Person
+      "*" . $claim->orderingLastName() .
+      "*" . $claim->orderingFirstName() .
+      "*" . $claim->orderingMiddleName() .
+      "*" .   // NM106 not used
+      "*".    // Name Suffix
+      "*XX" .
+      "*" . $claim->orderingNPI();
+
+    if (!$claim->orderingNPI()) {
+      $log .= "*** Ordering Provider has no NPI.\n";
+    }
+    $out .= "~\n";
+
+  }
    }
       // Segment REF (Ordering Provider Secondary Identification) omitted.
       // Segment PER (Ordering Provider Contact Information) omitted.
@@ -1236,7 +1313,7 @@ $CMS_5010 = true;
             $a[4] != null ) {
             $out .= "CAS02" . // Previous payer's adjustment reason
               "*" . $a[4] .
-              "~\n";    
+              "~\n";
         }
         *************************************************************/
       }

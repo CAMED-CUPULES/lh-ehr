@@ -46,7 +46,7 @@ $GLOBALS['PATIENT_REPORT_ACTIVE'] = true;
 $PDF_OUTPUT = empty($_POST['pdf']) ? 0 : intval($_POST['pdf']);
 
 if ($PDF_OUTPUT) {
-  require_once("$srcdir/html2pdf/vendor/autoload.php");
+  require_once($GLOBALS['modules_dir'] . "html2pdf/vendor/autoload.php");
   $pdf = new HTML2PDF ($GLOBALS['pdf_layout'],
                        $GLOBALS['pdf_size'],
                        $GLOBALS['pdf_language'],
@@ -122,9 +122,9 @@ function postToGet($arin) {
 <link rel="stylesheet" type="text/css" href="<?php echo $webserver_root; ?>/library/ESign/css/esign_report.css" />
 <?php } else {?>
 <html>
-<head>
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['webroot'] ?>/library/ESign/css/esign_report.css" />
+  <head>
+    <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
+    <link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['webroot'] ?>/library/ESign/css/esign_report.css" />
 <?php } ?>
 
 
@@ -142,6 +142,13 @@ function postToGet($arin) {
     z-index:10;
     border-bottom: solid thin #6D6D6D;
     padding:0% 2% 0% 2.5%;
+  }
+  @media print
+  {
+      .no-print, .no-print *
+      {
+          display: none !important;
+      }
   }
 </style>
 
@@ -163,10 +170,10 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
       $j("."+class_name).each(function(){
       val = document.getElementById(this.id).innerHTML;
       $j("#"+this.id).replaceWith(val);
-      
+
     });
   }
-  var res_id = 0;            
+  var res_id = 0;
   function doSearch(form_id,form_dir,exact,class_name,keys,case_sensitive) { // Uses jquery SearchHighlight Plug in
     var options ={};
     var keys = keys.replace(/^\s+|\s+$/g, '') ;
@@ -184,7 +191,7 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
         $j(this).attr("id",'result_'+res_id);
       });
   }
-  
+
   function remove_mark(form_id,form_dir){ // Removes all <mark> and </mark> tags
     var match1 = null;
     var src_str = document.getElementById('search_div_'+form_id+'_'+form_dir).innerHTML;
@@ -200,7 +207,7 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
     }
     document.getElementById('search_div_'+form_id+'_'+form_dir).innerHTML=src_str;
   }
-  function mark_hilight(form_id,form_dir,keys,case_sensitive){ // Adds <mark>match_val</mark> tags    
+  function mark_hilight(form_id,form_dir,keys,case_sensitive){ // Adds <mark>match_val</mark> tags
     keys = keys.replace(/^\s+|\s+$/g, '') ;
     if(keys == '') return;
     var src_str = $j('#search_div_'+form_id+'_'+form_dir).html();
@@ -228,7 +235,7 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
       doSearch(form_id,form_dir,'partial','hilite',keys,'false');
     }
   }
-  
+
   var forms_array;
   var res_array   = Array();
   function find_all(){ // for each report the function mark_hilight() is called
@@ -246,12 +253,12 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
     else{
       document.getElementById('alert_msg').innerHTML='';
     }
-    
+
     forms_arr = document.getElementById('forms_to_search');
     for (var i = 0; i < forms_arr.options.length; i++) {
      if(forms_arr.options[i].selected ==true){
           $j('.class_'+forms_arr.options[i].value).each(function(){
-          id_arr = this.id.split('search_div_');  
+          id_arr = this.id.split('search_div_');
           var re = new RegExp('_','i');
           new_id = id_arr[1].replace(re, "|");
           new_id_arr = new_id.split('|');
@@ -259,7 +266,7 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
           form_dir = new_id_arr[1];
           mark_hilight(form_id,form_dir,keys,case_sensitive);
         });
-          
+
       }
     }
     if($j('.hilite').length <1){
@@ -274,10 +281,10 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
     }
 
   }
-  
+
   function remove_mark_all(){ // clears previous search results if exists
     $j('.report_search_div').each(function(){
-      var id_arr = this.id.split('search_div_');  
+      var id_arr = this.id.split('search_div_');
       var re = new RegExp('_','i');
       var new_id = id_arr[1].replace(re, "|");
       var new_id_arr = new_id.split('|');
@@ -327,7 +334,7 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
     }
     element = document.getElementById(res_array[last_visited]);
     element.scrollIntoView(false);
-    
+
   }
 
   function prev(w_count){
@@ -360,9 +367,9 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
         return;
       }
     $j("#"+res_array[last_visited]).addClass("next");
-    
+
     }
-    
+
     element = document.getElementById(res_array[last_visited]);
     element.scrollIntoView(false);
   }
@@ -396,9 +403,9 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
       }
     }else{
       return 1;
-    } 
+    }
   }
-  
+
   function next_prev(action){
     var w_count =0;
     case_sensitive = false;
@@ -419,7 +426,7 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
     for (var i = 0; i < forms_arr.options.length; i++) {
      if(forms_arr.options[i].selected ==true){
           $j('.class_'+forms_arr.options[i].value).each(function(){
-          id_arr = this.id.split('search_div_');  
+          id_arr = this.id.split('search_div_');
           var re = new RegExp('_','i');
           new_id = id_arr[1].replace(re, "|");
           new_id_arr = new_id.split('|');
@@ -445,11 +452,11 @@ if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { 
        prev(w_count);
       }
       var tot_res = res_array.length/w_count;
-	  if(tot_res > 0){
-		document.getElementById('alert_msg').innerHTML='<?php echo xla('Showing result');?> '+cur_res+' <?php echo xla('of');?> '+tot_res;
-	  }
+      if(tot_res > 0){
+        document.getElementById('alert_msg').innerHTML='<?php echo xla('Showing result');?> '+cur_res+' <?php echo xla('of');?> '+tot_res;
+      }
     }
-    
+
   }
 </script>
 </head>
@@ -481,37 +488,31 @@ if ($printable) {
   }
   // Setup Headers and Footers for html2PDF only Download
   // in HTML view it's just one line at the top of page 1
-  echo '<page_header style="text-align:right;" class="custom-tag"> ' . xlt("PATIENT") . ':' . text($titleres['lname']) . ', ' . text($titleres['fname']) . ' - ' . $titleres['DOB_TS'] . '</page_header>    ';
-  echo '<page_footer style="text-align:right;" class="custom-tag">' . xlt('Generated on') . ' ' . oeFormatShortDate() . ' - ' . text($facility['name']) . ' ' . text($facility['phone']) . '</page_footer>';
-
-  // Use logo if it exists as 'practice_logo.png' in the site dir
-  // old code used the global custom dir which is no longer a valid
-   $practice_logo = "$OE_SITE_DIR/images/practice_logo.png";
-   if (file_exists($practice_logo)) {
-        echo "<img src='$practice_logo' align='left'><br />\n";
-     } 
+  echo '<page_header style="text-align:right;" class="custom-tag"> ' . xlt("PATIENT") . ':' . text($titleres['lname']) . ', ' . text($titleres['fname']) . ' - ' . text($titleres['DOB_TS']) . '</page_header>    ';
+  echo '<page_footer style="text-align:right;" class="custom-tag">' . xlt('Generated on') . ' ' . text(oeFormatShortDate()) . ' - ' . text($facility['name']) . ' ' . text($facility['phone']) . '</page_footer>';
 ?>
-<h2><?php echo $facility['name'] ?></h2>
-<?php echo $facility['street'] ?><br>
-<?php echo $facility['city'] ?>, <?php echo $facility['state'] ?> <?php echo $facility['postal_code'] ?><br clear='all'>
-<?php echo $facility['phone'] ?><br>
+  
+<h2>&nbsp;&nbsp;&nbsp;<?php echo text($facility['name']); ?></h2>
+<?php echo text($facility['street']); ?><br>
+<?php echo text($facility['city']); ?>, <?php echo text($facility['state']); ?> <?php echo text($facility['postal_code']); ?><br clear='all'>
+<?php echo text($facility['phone']); ?><br>
 
-<a href="javascript:window.close();"><span class='title'><?php echo $titleres['fname'] . " " . $titleres['lname']; ?></span></a><br>
-<span class='text'><?php xl('Generated on','e'); ?>: <?php echo oeFormatShortDate(); ?></span>
+<span class='title'><?php echo text($titleres['fname']) . " " . text($titleres['lname']); ?></span><br>
+<span class='text'><?php echo xlt('Generated on'); ?>: <?php echo text(oeFormatShortDate()); ?></span>
 <br><br>
 
 <?php
 
-} 
+}
 else { // not printable
 ?>
 
 <a href="patient_report.php" onclick='top.restoreSession()'>
- <span class='title'><?php xl('Patient Report','e'); ?></span>
- <span class='back'><?php echo $tback;?></span>
+ <span class='title'><?php echo xlt('Patient Report'); ?></span>
+ <span class='back'><?php echo text($tback);?></span>
 </a><br><br>
 <a href="custom_report.php?printable=1&<?php print postToGet($ar); ?>" class='link_submit' target='new' onclick='top.restoreSession()'>
- [<?php xl('Printable Version','e'); ?>]
+ [<?php echo xlt('Printable Version'); ?>]
 </a><br>
 <div class="report_search_bar" style="width:100%;" id="search_options">
   <table style="width:100%;">
@@ -594,10 +595,10 @@ foreach ($ar as $key => $val) {
     if (stristr($key,"include_")) {
 
         if ($val == "demographics") {
-            
+
             echo "<hr />";
             echo "<div class='text demographics' id='DEM'>\n";
-            print "<h1>".xl('Patient Data').":</h1>";
+            print "<h1>".xlt('Patient Data').":</h1>";
             // printRecDataOne($patient_data_array, getRecPatientData ($pid), $N);
             $result1 = getPatientData($pid);
             $result2 = getEmployerData($pid);
@@ -611,7 +612,7 @@ foreach ($ar as $key => $val) {
             echo "<hr />";
             echo "<div class='text history' id='HIS'>\n";
             if (acl_check('patients', 'med')) {
-                print "<h1>".xl('History Data').":</h1>";
+                print "<h1>".xlt('History Data').":</h1>";
                 // printRecDataOne($history_data_array, getRecHistoryData ($pid), $N);
                 $result1 = getHistoryData($pid);
                 echo "   <table>\n";
@@ -628,24 +629,33 @@ foreach ($ar as $key => $val) {
 
             echo "<hr />";
             echo "<div class='text insurance'>";
-            echo "<h1>".xl('Insurance Data').":</h1>";
-            print "<br><span class=bold>".xl('Primary Insurance Data').":</span><br>";
-            printRecDataOne($insurance_data_array, getRecInsuranceData ($pid,"primary"), $N);		
-            print "<span class=bold>".xl('Secondary Insurance Data').":</span><br>";	
+            echo "<h1>".xlt('Insurance Data').":</h1>";
+            if ($GLOBALS['insurance_address_demographics_report'] =='1') {
+            print "<br><span class=bold>".xlt('Primary Insurance Data').":</span><br>";
+                printRecDataOne($insurance_data_array_custom, getRecInsuranceData ($pid,"primary"), $N);
+                print "<span class=bold>".xlt('Secondary Insurance Data').":</span><br>";
+                printRecDataOne($insurance_data_array_custom, getRecInsuranceData ($pid,"secondary"), $N);
+                print "<span class=bold>".xlt('Tertiary Insurance Data').":</span><br>";
+                printRecDataOne($insurance_data_array_custom, getRecInsuranceData ($pid,"tertiary"), $N);
+            }else{
+                print "<br><span class=bold>".xlt('Primary Insurance Data').":</span><br>";
+            printRecDataOne($insurance_data_array, getRecInsuranceData ($pid,"primary"), $N);
+            print "<span class=bold>".xlt('Secondary Insurance Data').":</span><br>";
             printRecDataOne($insurance_data_array, getRecInsuranceData ($pid,"secondary"), $N);
-            print "<span class=bold>".xl('Tertiary Insurance Data').":</span><br>";
+            print "<span class=bold>".xlt('Tertiary Insurance Data').":</span><br>";
             printRecDataOne($insurance_data_array, getRecInsuranceData ($pid,"tertiary"), $N);
+            }
             echo "</div>";
 
         } elseif ($val == "billing") {
 
             echo "<hr />";
             echo "<div class='text billing'>";
-            print "<h1>".xl('Billing Information').":</h1>";
+            print "<h1>".xlt('Billing Information').":</h1>";
             if (count($ar['patient_encounter']) > 0) {
                 $billings = array();
                 echo "<table>";
-                echo "<tr><td width='400' class='bold'>Code</td><td class='bold'>".xl('Fee')."</td></tr>\n";
+                echo "<tr><td width='400' class='bold'>".xlt("Code")."</td><td class='bold'>".xlt('Fee')."</td></tr>\n";
                 $total = 0.00;
                 $copays = 0.00;
                 foreach ($ar['patient_encounter'] as $be) {
@@ -655,10 +665,10 @@ foreach ($ar as $key => $val) {
                     foreach ($billing as $b) {
                         echo "<tr>\n";
                         echo "<td class=text>";
-                        echo $b['code_type'] . ":\t" . $b['code'] . "&nbsp;". $b['modifier'] . "&nbsp;&nbsp;&nbsp;" . $b['code_text'] . "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                        echo text($b['code_type']) . ":\t" . text($b['code']) . "&nbsp;". text($b['modifier']) . "&nbsp;&nbsp;&nbsp;" . text($b['code_text']) . "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
                         echo "</td>\n";
                         echo "<td class=text>";
-                        echo oeFormatMoney($b['fee']);
+                        echo text(oeFormatMoney($b['fee']));
                         echo "</td>\n";
                         echo "</tr>\n";
                         $total += $b['fee'];
@@ -668,9 +678,9 @@ foreach ($ar as $key => $val) {
                     }
                 }
                 echo "<tr><td>&nbsp;</td></tr>";
-                echo "<tr><td class=bold>".xl('Sub-Total')."</td><td class=text>" . oeFormatMoney($total + abs($copays)) . "</td></tr>";
-                echo "<tr><td class=bold>".xl('Paid')."</td><td class=text>" . oeFormatMoney(abs($copays)) . "</td></tr>";
-                echo "<tr><td class=bold>".xl('Total')."</td><td class=text>" . oeFormatMoney($total) . "</td></tr>";
+                echo "<tr><td class=bold>".xlt('Sub-Total')."</td><td class=text>" . text(oeFormatMoney($total + abs($copays))) . "</td></tr>";
+                echo "<tr><td class=bold>".xlt('Paid')."</td><td class=text>" . text(oeFormatMoney(abs($copays))) . "</td></tr>";
+                echo "<tr><td class=bold>".xlt('Total')."</td><td class=text>" . text(oeFormatMoney($total)) . "</td></tr>";
                 echo "</table>";
                 echo "<pre>";
                 //print_r($billings);
@@ -704,7 +714,7 @@ foreach ($ar as $key => $val) {
             if (acl_check('patients', 'med')) {
                 echo "<hr />";
                 echo "<div class='text immunizations'>\n";
-                print "<h1>".xl('Patient Immunization').":</h1>";
+                print "<h1>".xlt('Patient Immunization').":</h1>";
                 $sql = "select i1.immunization_id, i1.administered_date, substring(i1.note,1,20) as immunization_note, c.code_text_short ".
                    " from immunizations i1 ".
                    " left join code_types ct on ct.ct_key = 'CVX' ".
@@ -725,9 +735,9 @@ foreach ($ar as $key => $val) {
                         $vaccine_display = generate_display_field(array('data_type'=>'1','list_id'=>'immunizations'), $row['immunization_id']);
                      }
                   }
-                  echo $row['administered_date'] . " - " . $vaccine_display;
+                  echo text($row['administered_date']) . " - " . $vaccine_display;
                   if ($row['immunization_note']) {
-                     echo " - " . $row['immunization_note'];
+                     echo " - " . text($row['immunization_note']);
                   }
                   echo "<br>\n";
                 }
@@ -739,12 +749,12 @@ foreach ($ar as $key => $val) {
 
             echo "<hr />";
             echo "<div class='text transactions'>\n";
-            print "<h1>".xl('Patient Communication sent').":</h1>";
+            print "<h1>".xlt('Patient Communication sent').":</h1>";
             $sql="SELECT concat( 'Messsage Type: ', batchcom.msg_type, ', Message Subject: ', batchcom.msg_subject, ', Sent on:', batchcom.msg_date_sent ) AS batchcom_data, batchcom.msg_text, concat( users.fname, users.lname ) AS user_name FROM `batchcom` JOIN `users` ON users.id = batchcom.sent_by WHERE batchcom.patient_id='$pid'";
             // echo $sql;
             $result = sqlStatement($sql);
             while ($row=sqlFetchArray($result)) {
-                echo $row{'batchcom_data'}.", By: ".$row{'user_name'}."<br>Text:<br> ".$row{'msg_txt'}."<br>\n";
+                echo text($row{'batchcom_data'}).", ".text('By').": ".text($row{'user_name'})."<br>".text('Text').":<br> ".text($row{'msg_txt'})."<br>\n";
             }
             echo "</div>\n";
 
@@ -752,7 +762,7 @@ foreach ($ar as $key => $val) {
 
             echo "<hr />";
             echo "<div class='text notes'>\n";
-            print "<h1>".xl('Patient Notes').":</h1>";
+            print "<h1>".xlt('Patient Notes').":</h1>";
             printPatientNotes($pid);
             echo "</div>";
 
@@ -760,7 +770,7 @@ foreach ($ar as $key => $val) {
 
             echo "<hr />";
             echo "<div class='text transactions'>\n";
-            print "<h1>".xl('Patient Transactions').":</h1>";
+            print "<h1>".xlt('Patient Transactions').":</h1>";
             printPatientTransactions($pid);
             echo "</div>";
 
@@ -769,7 +779,6 @@ foreach ($ar as $key => $val) {
     } else {
 
         // Documents is an array of checkboxes whose values are document IDs.
-        //
         if ($key == "documents") {
 
             echo "<hr />";
@@ -781,19 +790,19 @@ foreach ($ar as $key => $val) {
                 $fname = basename($d->get_url());
                 $couch_docid = $d->get_couch_docid();
                 $couch_revid = $d->get_couch_revid();
-                echo "<h1>" . xl('Document') . " '" . $fname ."'</h1>";
+                echo "<h1>" . xlt('Document') . " '" . text($fname) ."'</h1>";
                 $n = new Note();
                 $notes = $n->notes_factory($d->get_id());
                 if (!empty($notes)) echo "<table>";
                 foreach ($notes as $note) {
                     echo '<tr>';
-                    echo '<td>' . xl('Note') . ' #' . $note->get_id() . '</td>';
+                    echo '<td>' . xlt('Note') . ' #' . text($note->get_id()) . '</td>';
                     echo '</tr>';
                     echo '<tr>';
-                    echo '<td>' . xl('Date') . ': ' . oeFormatShortDate($note->get_date()) . '</td>';
+                    echo '<td>' . xlt('Date') . ': ' . text(oeFormatShortDate($note->get_date())) . '</td>';
                     echo '</tr>';
                     echo '<tr>';
-                    echo '<td>'.$note->get_note().'<br><br></td>';
+                    echo '<td>' . text($note->get_note()) . '<br><br></td>';
                     echo '</tr>';
                 }
                 if (!empty($notes)) echo "</table>";
@@ -802,13 +811,16 @@ foreach ($ar as $key => $val) {
                 if($couch_docid && $couch_revid){
                   $url_file = $d->get_couch_url($pid,$encounter);
                 }
+
                 // Collect filename and path
                 $from_all = explode("/",$url_file);
                 $from_filename = array_pop($from_all);
                 $from_pathname_array = array();
+
                 for ($i=0;$i<$d->get_path_depth();$i++) {
                   $from_pathname_array[] = array_pop($from_all);
                 }
+
                 $from_pathname_array = array_reverse($from_pathname_array);
                 $from_pathname = implode("/",$from_pathname_array);
 
@@ -821,6 +833,7 @@ foreach ($ar as $key => $val) {
                     '/documents/' . $from_pathname . '/' . $from_filename;
                   $to_file = substr($from_file, 0, strrpos($from_file, '.')) . '_converted.jpg';
                 }
+
                 //Extract the extension by the mime/type and not the file name extension
                 $image_data = getimagesize($from_file);
                 $extension = image_type_to_extension($image_data[2]);
@@ -838,7 +851,7 @@ foreach ($ar as $key => $val) {
                   else {
                     echo "<img src='" . $GLOBALS['webroot'] .
                       "/controller.php?document&retrieve&patient_id=&document_id=" .
-                      $document_id . "&as_file=false'><br><br>";
+                      attr($document_id) . "&as_file=false'><br><br>";
                   }
                 }
                 else {
@@ -846,19 +859,23 @@ foreach ($ar as $key => $val) {
           // Most clinic documents are expected to be PDFs, and in that happy case
           // we can avoid the lengthy image conversion process.
           if ($PDF_OUTPUT && $extension == ".pdf") {
+
             // HTML to PDF conversion will fail if there are open tags.
             echo "</div></div>\n";
             $content = getContent();
+
             // $pdf->setDefaultFont('Arial');
             $pdf->writeHTML($content, false);
             $pagecount = $pdf->pdf->setSourceFile($from_file);
             for($i = 0; $i < $pagecount; ++$i){
-              $pdf->pdf->AddPage();  
+              $pdf->pdf->AddPage();
               $itpl = $pdf->pdf->importPage($i + 1, '/MediaBox');
               $pdf->pdf->useTemplate($itpl);
             }
+
             // Make sure whatever follows is on a new page.
             $pdf->pdf->AddPage();
+
             // Resume output buffering and the above-closed tags.
             ob_start();
             echo "<div><div class='text documents'>\n";
@@ -867,6 +884,7 @@ foreach ($ar as $key => $val) {
             if (! is_file($to_file)) exec("convert -density 200 \"$from_file\" -append -resize 850 \"$to_file\"");
             if (is_file($to_file)) {
               if ($PDF_OUTPUT) {
+
                 // OK to link to the image file because it will be accessed by the
                 // HTML2PDF parser and not the browser.
                 echo "<img src='$to_file'><br><br>";
@@ -874,11 +892,11 @@ foreach ($ar as $key => $val) {
               else {
                 echo "<img src='" . $GLOBALS['webroot'] .
                   "/controller.php?document&retrieve&patient_id=&document_id=" .
-                  $document_id . "&as_file=false&original_file=false'><br><br>";
+                  attr($document_id) . "&as_file=false&original_file=false'><br><br>";
               }
             } else {
-              echo "<b>NOTE</b>: " . xl('Document') . "'" . $fname . "' " .
-                xl('cannot be converted to JPEG. Perhaps ImageMagick is not installed?') . "<br><br>";
+              echo "<b>".xlt('NOTE')."</b>: " . xlt('Document') . "'" . text($fname) . "' " .
+                xlt('cannot be converted to JPEG. Perhaps ImageMagick is not installed?') . "<br><br>";
               if($couch_docid && $couch_revid) {
                 unlink($from_file);
               }
@@ -914,30 +932,32 @@ foreach ($ar as $key => $val) {
                 $prevIssueType = 'asdf1234!@#$'; // random junk so as to not match anything
                 $first_issue = 0;
                 echo "<hr />";
-                echo "<h1>".xl("Issues")."</h1>";
+                echo "<h1>".xlt("Issues")."</h1>";
             }
             preg_match('/^(.*)_(\d+)$/', $key, $res);
             $rowid = $res[2];
             $irow = sqlQuery("SELECT type, title, comments, diagnosis " .
-                            "FROM lists WHERE id = '$rowid'");
+                            "FROM lists WHERE id = ?", array($rowid));
             $diagnosis = $irow['diagnosis'];
             if ($prevIssueType != $irow['type']) {
+
                 // output a header for each Issue Type we encounter
                 $disptype = $ISSUE_TYPES[$irow['type']][0];
-                echo "<div class='issue_type'>" . $disptype . ":</div>\n";
+                echo "<div class='issue_type'>" . text($disptype) . ":</div>\n";
                 $prevIssueType = $irow['type'];
             }
             echo "<div class='text issue'>";
-            echo "<span class='issue_title'>" . $irow['title'] . ":</span>";
-            echo "<span class='issue_comments'> " . $irow['comments'] . "</span>\n";
+            echo "<span class='issue_title'>" . text($irow['title']) . ":</span>";
+            echo "<span class='issue_comments'> " . text($irow['comments']) . "</span>\n";
+
             // Show issue's chief diagnosis and its description:
             if ($diagnosis) {
                 echo "<div class='text issue_diag'>";
-                echo "<span class='bold'>[".xl('Diagnosis')."]</span><br>";
+                echo "<span class='bold'>[".xlt('Diagnosis')."]</span><br>";
                 $dcodes = explode(";", $diagnosis);
                 foreach ($dcodes as $dcode) {
-                    echo "<span class='italic'>".$dcode."</span>: ";
-                    echo lookup_code_descriptions($dcode)."<br>\n";
+                    echo "<span class='italic'>".text($dcode)."</span>: ";
+                    echo text(lookup_code_descriptions($dcode))."<br>\n";
                 }
                 //echo $diagnosis." -- ".lookup_code_descriptions($diagnosis)."\n";
                 echo "</div>";
@@ -946,12 +966,12 @@ foreach ($ar as $key => $val) {
             // Supplemental data for GCAC or Contraception issues.
             if ($irow['type'] == 'ippf_gcac') {
                 echo "   <table>\n";
-                display_layout_rows('GCA', sqlQuery("SELECT * FROM lists_ippf_gcac WHERE id = '$rowid'"));
+                display_layout_rows('GCA', sqlQuery("SELECT * FROM lists_ippf_gcac WHERE id = ?", array($rowid)));
                 echo "   </table>\n";
             }
             else if ($irow['type'] == 'contraceptive') {
                 echo "   <table>\n";
-                display_layout_rows('CON', sqlQuery("SELECT * FROM lists_ippf_con WHERE id = '$rowid'"));
+                display_layout_rows('CON', sqlQuery("SELECT * FROM lists_ippf_con WHERE id = ?", array($rowid)));
                 echo "   </table>\n";
             }
 
@@ -974,36 +994,36 @@ foreach ($ar as $key => $val) {
 
                 if ($res[1] == 'patient_encounter') {
                     echo "<div class='text encounter'>\n";
-                    echo "<h1>" . xl($formres["form_name"]) . "</h1>";
+                    echo "<h1>" . xlt($formres["form_name"]) . "</h1>";
                 }
                 else {
                     echo "<div class='text encounter_form'>";
-                    echo "<h1>" . xl_form_title($formres["form_name"]) . "</h1>";
+                    echo "<h1>" . text(xl_form_title($formres["form_name"])) . "</h1>";
                 }
 
                 // show the encounter's date
                 echo "(" . oeFormatSDFT(strtotime($dateres["date"])) . ") ";
                 if ($res[1] == 'patient_encounter') {
                     // display the provider info
-                    echo ' '. xl('Provider') . ': ' . text(getProviderName(getProviderIdOfEncounter($form_encounter)));
+                    echo ' '. xlt('Provider') . ': ' . text(getProviderName(getProviderIdOfEncounter($form_encounter)));
                 }
                 echo "<br>\n";
-   
+
                 // call the report function for the form
-                ?>                
+                ?>
                 <div name="search_div" id="search_div_<?php echo attr($form_id)?>_<?php echo attr($res[1])?>" class="report_search_div class_<?php echo attr($res[1]); ?>">
                 <?php
                 if (substr($res[1],0,3) == 'LBF')
                   call_user_func("lbf_report", $pid, $form_encounter, $N, $form_id, $res[1]);
                 else
                   call_user_func($res[1] . "_report", $pid, $form_encounter, $N, $form_id);
-                
+
                 $esign = $esignApi->createFormESign( $formId, $res[1], $form_encounter );
                 if ( $esign->isLogViewable("report") ) {
                     $esign->renderLog();
                 }
                 ?>
-                
+
                 </div>
                 <?php
 
@@ -1019,13 +1039,13 @@ foreach ($ar as $key => $val) {
                       "ORDER BY b.date",
                       array($pid, $form_encounter));
                     while ($brow=sqlFetchArray($bres)) {
-                        echo "<span class='bold'>&nbsp;".xl('Procedure').": </span><span class='text'>" .
-                            $brow['code'] . " " . $brow['code_text'] . "</span><br>\n";
+                        echo "<span class='bold'>&nbsp;".xlt('Procedure').": </span><span class='text'>" .
+                            text($brow['code']) . " " . text($brow['code_text']) . "</span><br>\n";
                     }
                 }
 
                 print "</div>";
-            
+
             } // end auth-check for encounter forms
 
         } // end if('issue_')... else...
@@ -1035,7 +1055,10 @@ foreach ($ar as $key => $val) {
 } // end $ar loop
 
 if ($printable)
-  echo "<br /><br />" . xl('Signature') . ": _______________________________<br />";
+  echo "<br /><br />" . xlt('Signature') . ": _______________________________<br />";
+
+if (!$PDF_OUTPUT && $printable)
+  echo "<br><a href='javascript:window.close();' class='no-print'><h2>Close</h2></a>"
 ?>
 
 </div> <!-- end of report_custom DIV -->

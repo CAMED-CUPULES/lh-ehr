@@ -13,7 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
- * @package LibreEHR
+ * @author  Art Eaton art@suncoastconnection.com  (MIPS/MACRA re-factor)
+ * @author  Bryan Lee <leebc11@acm.org>  (PQRS additions)
+ * @link    http://suncoastconnection.com
+ * @package LibreHealth EHR
  * @author  Brady Miller <brady@sparmy.com>
  * @link    http://librehealth.io
  */
@@ -69,11 +72,12 @@ form {
 #searchResultsHeader th {
     font-size: 0.7em;
 }
-#searchResults {
-    width: 100%;
-    height: 80%;
-    overflow: auto;
-}
+<?php if ($from_page == "pqrs_report") {
+    echo "#searchResults {    width: 100%;    height: 60%;    overflow: auto;}";
+ }else{
+    echo "#searchResults {    width: 100%;    height: 80%;    overflow: auto;}";
+}?>
+
 
 .srName { width: 12%; }
 .srGender { width: 5%; }
@@ -87,6 +91,11 @@ form {
 .srDateLast { width: 11%; }
 .srDateNext { width: 11%; }
 .srMisc { width: 10%; }
+.srAnswer { 
+    text-align: center;}
+.srUpdate { 
+    width: 1%; 
+    text-align: right;}
 
 #searchResults table {
     width: 100%;
@@ -107,6 +116,7 @@ form {
     background-color: #336699;
     color: white;
 }
+.reminder { color: blue; font-weight: bold; }
 </style>
 
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-1.2.2.min.js"></script>
@@ -114,6 +124,7 @@ form {
 <?php if ($popup) { ?>
 <script type="text/javascript" src="../../../library/topdialog.js"></script>
 <?php } ?>
+
 
 <script language="JavaScript">
 <?php if ($popup) require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
@@ -209,8 +220,8 @@ if ($popup) {
   while ($row = sqlFetchArray($rez)) $result[] = $row;
   _set_patient_inc_count($sqllimit, count($result), $where, $sqlBindArray);
 }
-else if ($from_page == "cdr_report") {
-  // Collect setting from cdr report
+else if ($from_page == "pqrs_report") {
+  // Collect setting from pqrs report
   echo "<input type='hidden' name='from_page' value='$from_page' />\n";
   $report_id = isset($_REQUEST['report_id']) ? $_REQUEST['report_id'] : 0;
   echo "<input type='hidden' name='report_id' value='".$report_id."' />\n";
@@ -223,7 +234,7 @@ else if ($from_page == "cdr_report") {
   $print_patients = isset($_REQUEST['print_patients'])? $_REQUEST['print_patients'] : 0;
   echo "<input type='hidden' name='print_patients' value='".$print_patients."' />\n";
 
-  // Collect patient listing from cdr report
+  // Collect patient listing from pqrs report
   if ($print_patients) {
     // collect entire listing for printing
     $result = collectItemizedPatientsCdrReport($report_id,$itemized_test_id,$pass_id,$numerator_label);
@@ -262,6 +273,7 @@ else {
       $given, $orderby, $sqllimit, $fstart, $search_service_code);
   }
 }
+
 ?>
 
 </form>
@@ -269,8 +281,8 @@ else {
 <table border='0' cellpadding='5' cellspacing='0' width='100%'>
  <tr>
   <td class='text'>
-  <?php if ($from_page == "cdr_report") { ?>
-   <a href='../../reports/cqm.php?report_id=<?php echo attr($report_id) ?>' class='css_button' onclick='top.restoreSession()'><span><?php echo xlt("Return To Report Results"); ?></span></a>
+  <?php if ($from_page == "pqrs_report") { ?>
+   <a href='../../../modules/MIPS/clinical_measures.php?report_id=<?php echo attr($report_id) ?>' class='css_button' onclick='top.restoreSession()'><span><?php echo xlt("Return To Report Results"); ?></span></a>
   <?php } else { ?>
    <a href="./patient_select_help.php" target=_new onclick='top.restoreSession()'>[<?php echo htmlspecialchars( xl('Help'), ENT_NOQUOTES); ?>]&nbsp</a>
   <?php } ?>
@@ -279,8 +291,8 @@ else {
 <?php if ($message) echo "<font color='red'><b>".htmlspecialchars( $message, ENT_NOQUOTES)."</b></font>\n"; ?>
   </td>
   <td>
-   <?php if ($from_page == "cdr_report") { ?>
-    <?php echo "<a href='patient_select.php?from_page=cdr_report&pass_id=".attr($pass_id)."&report_id=".attr($report_id)."&itemized_test_id=".attr($itemized_test_id)."&numerator_label=".urlencode(attr($row['numerator_label']))."&print_patients=1' class='css_button' onclick='top.restoreSession()'><span>".xlt("Print Entire Listing")."</span></a>"; ?>
+   <?php if ($from_page == "pqrs_report") { ?>
+    <?php echo "<a href='patient_select.php?from_page=pqrs_report&pass_id=".attr($pass_id)."&report_id=".attr($report_id)."&itemized_test_id=".attr($itemized_test_id)."&numerator_label=".urlencode(attr($row['numerator_label']))."&print_patients=1' class='css_button' onclick='top.restoreSession()'><span>".xlt("Print Entire Listing")."</span></a>"; ?>
    <?php } ?> &nbsp;
   </td>
   <td class='text' align='right'>
@@ -308,7 +320,7 @@ if ($fend > $count) $fend = $count;
   </td>
  </tr>
  <tr>
-   <?php if ($from_page == "cdr_report") {
+   <?php if ($from_page == "pqrs_report") {
      echo "<td colspan='6' class='text'>";
      echo "<b>";
      if ($pass_id == "fail") {
@@ -331,7 +343,10 @@ if ($fend > $count) $fend = $count;
  </tr>
 </table>
 
+
+
 <div id="searchResultsHeader">
+
 <table>
 <tr>
 <th class="srName"><?php echo htmlspecialchars( xl('Name'), ENT_NOQUOTES);?></th>
@@ -362,6 +377,7 @@ if (!$popup && preg_match('/^(\d+)\s*(.*)/',$patient,$matches) > 0) {
 else {
   // Alternate patient search results style; this gets address plus other
   // fields that are mandatory, up to a limit of 5.
+// -- leebc doesn't know if we need this, but errors if I removed it 2016-06-16
   $extracols = array();
   $tres = sqlStatement("SELECT * FROM layout_options " .
     "WHERE form_id = 'DEM' AND ( uor > 1 AND field_id != '' " .
@@ -378,10 +394,13 @@ else {
     echo "<th class='srMisc'>" . htmlspecialchars(xl($trow['title']), ENT_NOQUOTES) . "</th>\n";
   }
 }
-?>
 
+
+
+?>
 </tr>
 </table>
+
 </div>
 
 <div id="searchResults">
@@ -411,43 +430,43 @@ if ($result) {
         if ($all_other_phones == '') {$all_other_phones = xl('No other phone numbers listed');}
         //end of phone number display setup, now display the phone number(s)
         echo "<td class='srPhone' title='".htmlspecialchars( $all_other_phones, ENT_QUOTES)."'>" .
-	    htmlspecialchars( $iter['phone_home'], ENT_NOQUOTES) . "</td>\n";
-        
+        htmlspecialchars( $iter['phone_home'], ENT_NOQUOTES) . "</td>\n";
+
         echo "<td class='srSS'>" . htmlspecialchars( $iter['ss'], ENT_NOQUOTES) . "</td>";
         if ($iter{"DOB"} != "0000-00-00 00:00:00") {
             echo "<td class='srDOB'>" . htmlspecialchars( $iter['DOB_TS'], ENT_NOQUOTES) . "</td>";
         } else {
             echo "<td class='srDOB'>&nbsp;</td>";
         }
-        
+
         echo "<td class='srID'>" . htmlspecialchars( $iter['pid'], ENT_NOQUOTES) . "</td>";
 
         if (empty($GLOBALS['patient_search_results_style'])) {
 
           echo "<td class='srPID'>" . htmlspecialchars( $iter['pid'], ENT_NOQUOTES) . "</td>";
-          
+
           //setup for display of encounter date info
           $encounter_count = 0;
-          $day_diff = ''; 
-          $last_date_seen = ''; 
-          $next_appt_date= ''; 
+          $day_diff = '';
+          $last_date_seen = '';
+          $next_appt_date= '';
           $pid = '';
 
           // calculate date differences based on date of last encounter with billing entries
           $query = "select DATE_FORMAT(max(form_encounter.date),'%m/%d/%y') as mydate," .
                   " (to_days(current_date())-to_days(max(form_encounter.date))) as day_diff," .
                   " DATE_FORMAT(max(form_encounter.date) + interval " .
-	          add_escape_custom($add_days) .
+              add_escape_custom($add_days) .
                   " day,'%m/%d/%y') as next_appt, dayname(max(form_encounter.date) + interval " .
                   add_escape_custom($add_days) .
-	          " day) as next_appt_day from form_encounter " .
+              " day) as next_appt_day from form_encounter " .
                   "join billing on billing.encounter = form_encounter.encounter and " .
                   "billing.pid = form_encounter.pid and billing.activity = 1 and " .
                   "billing.code_type not like 'COPAY' where ".
                   "form_encounter.pid = ?";
           $statement= sqlStatement($query, array($iter{"pid"}) );
           if ($results = sqlFetchArray($statement)) {
-              $last_date_seen = $results['mydate']; 
+              $last_date_seen = $results['mydate'];
               $day_diff = $results['day_diff'];
               $next_appt_date= $results['next_appt_day'].', '.$results['next_appt'];
           }
@@ -455,17 +474,17 @@ if ($result) {
           $query = "select DATE_FORMAT(max(form_encounter.date),'%m/%d/%y') as mydate," .
                   " (to_days(current_date())-to_days(max(form_encounter.date))) as day_diff," .
                   " DATE_FORMAT(max(form_encounter.date) + interval " .
-	          add_escape_custom($add_days) .
+              add_escape_custom($add_days) .
                   " day,'%m/%d/%y') as next_appt, dayname(max(form_encounter.date) + interval " .
                   add_escape_custom($add_days) .
-	          " day) as next_appt_day from form_encounter " .
+              " day) as next_appt_day from form_encounter " .
                   " where form_encounter.pid = ?";
           $statement= sqlStatement($query, array($iter{"pid"}) );
           if ($results = sqlFetchArray($statement)) {
-              $last_date_seen = $results['mydate']; 
+              $last_date_seen = $results['mydate'];
               $day_diff = $results['day_diff'];
               $next_appt_date= $results['next_appt_day'].', '.$results['next_appt'];
-          }
+    }
 
           //calculate count of encounters by distinct billing dates with cpt4
           //entries
@@ -505,6 +524,44 @@ if ($result) {
 </table>
 </div>  <!-- end searchResults DIV -->
 
+
+<table border='0' cellpadding='5' cellspacing='0' width='100%'>
+ <tr>
+  <td class='text'>
+  <?php if ($from_page == "pqrs_report") { ?>
+   <a href='../../reports/clinical_measures.php?report_id=<?php echo attr($report_id) ?>' class='css_button' onclick='top.restoreSession()'><span><?php echo xlt("Return To Report Results"); ?></span></a>
+  <?php }   ?>
+  </td>
+  <td class='text' align='center'>
+<?php if ($message) echo "<font color='red'><b>".htmlspecialchars( $message, ENT_NOQUOTES)."</b></font>\n"; ?>
+  </td>
+  <td class='text' align='right'>
+<?php
+// Show start and end row number, and number of rows, with paging links.
+//
+// $count = $fstart + $GLOBALS['PATIENT_INC_COUNT']; // Why did I do that???
+$count = $GLOBALS['PATIENT_INC_COUNT'];
+$fend = $fstart + $MAXSHOW;
+if ($fend > $count) $fend = $count;
+?>
+<?php if ($fstart) { ?>
+   <a href="javascript:submitList(-<?php echo $MAXSHOW ?>)">
+    &lt;&lt;
+   </a>
+   &nbsp;&nbsp;
+<?php } ?>
+   <?php echo ($fstart + 1) . htmlspecialchars( " - $fend of $count", ENT_NOQUOTES); ?>
+<?php if ($count > $fend) { ?>
+   &nbsp;&nbsp;
+   <a href="javascript:submitList(<?php echo $MAXSHOW ?>)">
+    &gt;&gt;
+   </a>
+<?php } ?>
+  </td>
+ </tr>
+</table>
+
+
 <script language="javascript">
 
 // jQuery stuff to make the page a little easier to use
@@ -523,17 +580,10 @@ $(document).ready(function(){
 
 var SelectPatient = function (eObj) {
 <?php 
-// For the old layout we load a frameset that also sets up the new pid.
 // The new layout loads just the demographics frame here, which in turn
 // will set the pid and load all the other frames.
-if ($GLOBALS['concurrent_layout']) {
     $newPage = "../../patient_file/summary/demographics.php?set_pid=";
     $target = "document";
-}
-else {
-    $newPage = "../../patient_file/patient_file.php?set_pid=";
-    $target = "top";
-}
 ?>
     objID = eObj.id;
     var parts = objID.split("~");
@@ -543,7 +593,7 @@ else {
     return true;
 }
 
-</script>
 
+</script>
 </body>
 </html>

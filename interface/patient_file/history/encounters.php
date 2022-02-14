@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author  Brady Miller <brady@sparmy.com>
  * @author  Roberto Vasquez <robertogagliotta@gmail.com>
  * @link    http://librehealth.io
@@ -39,6 +39,7 @@ require_once("$srcdir/invoice_summary.inc.php");
 require_once("$srcdir/formatting.inc.php");
 require_once("../../../custom/code_types.inc.php");
 require_once("$srcdir/formdata.inc.php");
+require_once("$srcdir/headers.inc.php");
 
 // "issue" parameter exists if we are being invoked by clicking an issue title
 // in the left_nav menu.  Currently that is just for athletic teams.  In this
@@ -60,6 +61,7 @@ $issue = empty($_GET['issue']) ? 0 : 0 + $_GET['issue'];
  $auth_relaxed  = acl_check('encounters', 'relaxed');
  $auth_med      = acl_check('patients'  , 'med');
  $auth_demo     = acl_check('patients'  , 'demo');
+ do_action( 'demographics_check_auth', $args = array( 'username' => $_SESSION['authUser'], 'pid' => $pid ) );
 
  $tmp = getPatientData($pid, "squad");
  if ($tmp['squad'] && ! acl_check('squads', $tmp['squad']))
@@ -83,39 +85,39 @@ if (isset($_GET['billing']))
 
 //Get Document List by Encounter ID
 function getDocListByEncID($encounter,$raw_encounter_date,$pid){
-	global $ISSUE_TYPES, $auth_med; 
+    global $ISSUE_TYPES, $auth_med; 
 
-	$documents = getDocumentsByEncounter($pid,$encounter);
-	if ( count($documents) > 0 ) {
-		foreach ( $documents as $documentrow) {
-			if ($auth_med) {
-				$irow = sqlQuery("SELECT type, title, begdate FROM lists WHERE id = ? LIMIT 1", array($documentrow['list_id']) );
-				if ($irow) {
-				  $tcode = $irow['type'];
-				  if ($ISSUE_TYPES[$tcode])
-					  $tcode = $ISSUE_TYPES[$tcode][2];
-				  echo text("$tcode: " . $irow['title']);
-				}
-			}
-			else {
-				echo "(" . xlt('No access') . ")";
-			}
+    $documents = getDocumentsByEncounter($pid,$encounter);
+    if ( count($documents) > 0 ) {
+        foreach ( $documents as $documentrow) {
+            if ($auth_med) {
+                $irow = sqlQuery("SELECT type, title, begdate FROM lists WHERE id = ? LIMIT 1", array($documentrow['list_id']) );
+                if ($irow) {
+                  $tcode = $irow['type'];
+                  if ($ISSUE_TYPES[$tcode])
+                      $tcode = $ISSUE_TYPES[$tcode][2];
+                  echo text("$tcode: " . $irow['title']);
+                }
+            }
+            else {
+                echo "(" . xlt('No access') . ")";
+            }
 
-			// Get the notes for this document and display as title for the link.					
-			$queryString = "SELECT date,note FROM notes WHERE foreign_id = ? ORDER BY date";
-			$noteResultSet = sqlStatement($queryString,array($documentrow['id']));
-			$note = '';
-			while ( $row = sqlFetchArray($noteResultSet)) {
-				$note .= oeFormatShortDate(date('Y-m-d', strtotime($row['date']))) . " : " . attr($row['note']) . "\n";
-			}
-			$docTitle = ( $note ) ? $note : xla("View document");
+            // Get the notes for this document and display as title for the link.                   
+            $queryString = "SELECT date,note FROM notes WHERE foreign_id = ? ORDER BY date";
+            $noteResultSet = sqlStatement($queryString,array($documentrow['id']));
+            $note = '';
+            while ( $row = sqlFetchArray($noteResultSet)) {
+                $note .= oeFormatShortDate(date('Y-m-d', strtotime($row['date']))) . " : " . attr($row['note']) . "\n";
+            }
+            $docTitle = ( $note ) ? $note : xla("View document");
 
-			$docHref = $GLOBALS['webroot']."/controller.php?document&view&patient_id=".attr($pid)."&doc_id=".attr($documentrow['id']);
-			echo "<div class='text docrow' id='" . attr($documentrow['id'])."' title='". $docTitle . "'>\n";
-			echo "<a href='$docHref' onclick='top.restoreSession()' >". xlt('Document') . ": " . text(basename($documentrow['url'])) . ' (' . text(xl_document_category($documentrow['name'])) . ')' . "</a>";
-			echo "</div>";
-		}
-	}
+            $docHref = $GLOBALS['webroot']."/controller.php?document&view&patient_id=".attr($pid)."&doc_id=".attr($documentrow['id']);
+            echo "<div class='text docrow' id='" . attr($documentrow['id'])."' title='". attr($docTitle) . "'>\n";
+            echo "<a href='$docHref' onclick='top.restoreSession()' >". xlt('Document') . ": " . text(basename($documentrow['url'])) . ' (' . text(xl_document_category($documentrow['name'])) . ')' . "</a>";
+            echo "</div>";
+        }
+    }
 }
  
 // This is called to generate a line of output for a patient document.
@@ -169,12 +171,14 @@ function generatePageElement($start,$pagesize,$billing,$issue,$text)
 ?>
 <html>
 <head>
-<?php html_header_show();?>
-<!-- Main style sheet comes after the page-specific stylesheet to facilitate overrides. -->
+<?php 
+    html_header_show();
+    // Include Bootstrap
+  call_required_libraries(array("jquery-min-3-1-1","bootstrap"));
+?>
+    <link rel='stylesheet' href='<?php echo $css_header ?>' type='text/css'>
+    <!-- Main style sheet comes after the page-specific stylesheet to facilitate overrides. -->
 <link rel="stylesheet" href="<?php echo $GLOBALS['webroot'] ?>/library/css/encounters.css" type="text/css">
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/ajtooltip.js"></script>
 
 <script language="JavaScript">
@@ -186,25 +190,14 @@ function toencounter(rawdata) {
     var datestr = parts[1];
 
     top.restoreSession();
-<?php if ($GLOBALS['concurrent_layout']) { ?>
     parent.left_nav.setEncounter(datestr, enc, window.name);
-    parent.left_nav.setRadio(window.name, 'enc');
     parent.left_nav.loadFrame('enc2', window.name, 'patient_file/encounter/encounter_top.php?set_encounter=' + enc);
-<?php } else { ?>
-    top.Title.location.href = '../encounter/encounter_title.php?set_encounter='   + enc;
-    top.Main.location.href  = '../encounter/patient_encounter.php?set_encounter=' + enc;
-<?php } ?>
 }
 
 function todocument(docid) {
-  h = '<?php echo $GLOBALS['webroot'] ?>/controller.php?document&view&patient_id=<?php echo $pid ?>&doc_id=' + docid;
+  h = '<?php echo $GLOBALS['webroot'] ?>/controller.php?document&view&patient_id=<?php echo attr($pid); ?>&doc_id=' + <?php echo attr(docid); ?>;
   top.restoreSession();
-<?php if ($GLOBALS['concurrent_layout']) { ?>
-  parent.left_nav.setRadio(window.name, 'doc');
   location.href = h;
-<?php } else { ?>
-  top.Main.location.href = h;
-<?php } ?>
 }
 
  // Helper function to set the contents of a div.
@@ -252,15 +245,10 @@ function efmouseover(elem, ptid, encid, formname, formid) {
 
 </head>
 
-<body class="body_bottom">
+<body class="body_top">
 <div id="encounters"> <!-- large outer DIV -->
 
-<?php if ($GLOBALS['concurrent_layout']) { ?>
-<!-- <a href='encounters_full.php'> -->
-<?php } else { ?>
-<!-- <a href='encounters_full.php' target='Main'> -->
-<?php } ?>
-<font class='title'>
+<div class='title' style="padding:10px;">
 <?php
 if ($issue) {
   echo htmlspecialchars(xl('Past Encounters for'), ENT_NOQUOTES) . ' ';
@@ -271,7 +259,7 @@ else {
   echo htmlspecialchars(xl('Past Encounters and Documents'), ENT_NOQUOTES);
 }
 ?>
-</font>
+</div>
 &nbsp;&nbsp;
 <?php
 // Setup the GET string to append when switching between billing and clinical views.
@@ -305,9 +293,9 @@ $getStringForPage="&pagesize=".attr($pagesize)."&pagestart=".attr($pagestart);
 
 ?>
 <?php if ($billing_view) { ?>
-<a href='encounters.php?billing=0&issue=<?php echo $issue.$getStringForPage; ?>' onclick='top.restoreSession()' style='font-size:8pt'>(<?php echo htmlspecialchars( xl('To Clinical View'), ENT_NOQUOTES); ?>)</a>
+<a href='encounters.php?billing=0&issue=<?php echo attr($issue.$getStringForPage); ?>' onclick='top.restoreSession()' style='font-size:8pt'>(<?php echo htmlspecialchars( xl('To Clinical View'), ENT_NOQUOTES); ?>)</a>
 <?php } else { ?>
-<a href='encounters.php?billing=1&issue=<?php echo $issue.$getStringForPage; ?>' onclick='top.restoreSession()' style='font-size:8pt'>(<?php echo htmlspecialchars( xl('To Billing View'), ENT_NOQUOTES); ?>)</a>
+<a href='encounters.php?billing=1&issue=<?php echo attr($issue.$getStringForPage); ?>' onclick='top.restoreSession()' style='font-size:8pt'>(<?php echo htmlspecialchars( xl('To Billing View'), ENT_NOQUOTES); ?>)</a>
 <?php } ?>
 
 <span style="float:right">
@@ -317,7 +305,7 @@ $getStringForPage="&pagesize=".attr($pagesize)."&pagestart=".attr($pagestart);
     $pagesizes=array(5,10,15,20,25,50,0);
     for($idx=0;$idx<count($pagesizes);$idx++)
     {
-        echo "<OPTION value='" . $pagesizes[$idx] . "'";
+        echo "<OPTION value='" . attr($pagesizes[$idx]) . "'";
         if($pagesize==$pagesizes[$idx])
         {
             echo " SELECTED='true'>";
@@ -332,7 +320,7 @@ $getStringForPage="&pagesize=".attr($pagesize)."&pagestart=".attr($pagestart);
         }
         else
         {
-            echo $pagesizes[$idx];
+            echo text($pagesizes[$idx]);
         }
         echo "</OPTION>";
         
@@ -343,8 +331,9 @@ $getStringForPage="&pagesize=".attr($pagesize)."&pagestart=".attr($pagestart);
 
 <br>
 
-<table>
- <tr class='text'>
+<div class="table-responsive" style="padding:5px;">
+<table class="table well">
+ <tr>
   <th><?php echo htmlspecialchars( xl('Date'), ENT_NOQUOTES); ?></th>
 
 <?php if ($billing_view) { ?>
@@ -358,11 +347,11 @@ $getStringForPage="&pagesize=".attr($pagesize)."&pagestart=".attr($pagestart);
 <?php } ?>
 
 <?php if ($billing_view) { ?>
-  <th><?php echo xl('Code','e'); ?></th>
-  <th class='right'><?php echo htmlspecialchars( xl('Chg'), ENT_NOQUOTES); ?></th>
-  <th class='right'><?php echo htmlspecialchars( xl('Paid'), ENT_NOQUOTES); ?></th>
-  <th class='right'><?php echo htmlspecialchars( xl('Adj'), ENT_NOQUOTES); ?></th>
-  <th class='right'><?php echo htmlspecialchars( xl('Bal'), ENT_NOQUOTES); ?></th>
+  <th><?php echo xlt('Code'); ?></th>
+  <th><?php echo htmlspecialchars( xl('Chg'), ENT_NOQUOTES); ?></th>
+  <th><?php echo htmlspecialchars( xl('Paid'), ENT_NOQUOTES); ?></th>
+  <th><?php echo htmlspecialchars( xl('Adj'), ENT_NOQUOTES); ?></th>
+  <th><?php echo htmlspecialchars( xl('Bal'), ENT_NOQUOTES); ?></th>
 <?php } else { ?>
   <th colspan='5'><?php echo htmlspecialchars( (($GLOBALS['phone_country_code'] == '1') ? xl('Billing') : xl('Coding')), ENT_NOQUOTES); ?></th>
 <?php } ?>
@@ -432,7 +421,7 @@ if(($pagesize > 0) && ($pagestart>0))
 {
     generatePageElement($pagestart-$pagesize,$pagesize,$billing_view,$issue,"&lArr;" . htmlspecialchars( xl("Prev"), ENT_NOQUOTES) . " ");
 }
-echo ($pagestart + 1)."-".$upper." " . htmlspecialchars( xl('of'), ENT_NOQUOTES) . " " .$numRes;
+echo text(($pagestart + 1))."-".text($upper)." " . htmlspecialchars( xl('of'), ENT_NOQUOTES) . " " .text($numRes);
 if(($pagesize>0) && ($pagestart+$pagesize <= $numRes))
 {
     generatePageElement($pagestart+$pagesize,$pagesize,$billing_view,$issue," " . htmlspecialchars( xl("Next"), ENT_NOQUOTES) . "&rArr;");
@@ -497,9 +486,9 @@ while ($result4 = sqlFetchArray($res4)) {
             // Show billing note that you can click on to edit.
             $feid = $result4['id'] ? htmlspecialchars( $result4['id'], ENT_QUOTES) : 0; // form_encounter id
             echo "<td valign='top'>";
-            echo "<div id='note_$feid'>";
+            echo "<div id='note_".attr($feid)."'>";
             //echo "<div onclick='editNote($feid)' title='Click to edit' class='text billing_note_text'>";
-            echo "<div id='$feid' title='". htmlspecialchars( xl('Click to edit'), ENT_QUOTES) . "' class='text billing_note_text'>";
+            echo "<div id='".attr($feid)."' title='". htmlspecialchars( xl('Click to edit'), ENT_QUOTES) . "' class='text billing_note_text'>";
             echo $result4['billing_note'] ? nl2br(htmlspecialchars( $result4['billing_note'], ENT_NOQUOTES)) : htmlspecialchars( xl('Add','','[',']'), ENT_NOQUOTES);
             echo "</div>";
             echo "</div>";
@@ -534,10 +523,10 @@ while ($result4 = sqlFetchArray($res4)) {
 
             // show encounter reason/title
             echo "<td>".$reason_string;
-			
-			//Display the documents tagged to this encounter
-			getDocListByEncID($result4['encounter'],$raw_encounter_date,$pid);	
-			
+            
+            //Display the documents tagged to this encounter
+            getDocListByEncID($result4['encounter'],$raw_encounter_date,$pid);  
+            
             echo "<div style='padding-left:10px;'>";
 
             // Now show a line for each encounter form, if the user is authorized to
@@ -626,7 +615,7 @@ while ($result4 = sqlFetchArray($res4)) {
                         if ($arid) $arinvoice = ar_get_invoice_summary($pid, $result4['encounter'], true);
                     if ($arid) {
                         $arlinkbeg = "<a href='../../billing/sl_eob_invoice.php?id=" .
-			            htmlspecialchars( $arid, ENT_QUOTES)."'" .
+                        htmlspecialchars( $arid, ENT_QUOTES)."'" .
                                     " target='_blank' class='text' style='color:#00cc00'>";
                         $arlinkend = "</a>";
                     }
@@ -708,14 +697,14 @@ while ($result4 = sqlFetchArray($res4)) {
                 }
             } // end if there is billing
 
-            echo "<td class='text'>".$binfo[0]."</td>\n";
+            echo "<td>".$binfo[0]."</td>\n";
             for ($i = 1; $i < 5; ++$i) {
-                echo "<td class='text right'>". $binfo[$i]."</td>\n";
+                echo "<td>". $binfo[$i]."</td>\n";
             }
         } // end if authorized
 
         else {
-            echo "<td class='text' valign='top' colspan='5' rowspan='$encounter_rows'>(".htmlspecialchars( xl("No access"), ENT_NOQUOTES).")</td>\n";
+            echo "<td class='text' valign='top' colspan='5' rowspan='".attr($encounter_rows)."'>(".htmlspecialchars( xl("No access"), ENT_NOQUOTES).")</td>\n";
         }
 
         // show insurance
@@ -769,11 +758,12 @@ while ($drow /* && $count <= $N */) {
 ?>
 
 </table>
+</div>
 
 </div> <!-- end 'encounters' large outer DIV -->
 
 <div id='tooltipdiv'
- style='position:absolute;width:400pt;border:1px solid black;padding:2px;background-color:#ffffaa;visibility:hidden;z-index:1000;font-size:9pt;'
+ style='position:absolute;border:1px solid black;padding:2px;background-color:#ffffaa;visibility:hidden;z-index:1000;font-size:9pt;'
 ></div>
 
 </body>

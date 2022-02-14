@@ -14,6 +14,10 @@ $fake_register_globals = false;
 
 require_once("../../globals.php");
 require_once("$srcdir/formdata.inc.php");
+require_once("$srcdir/headers.inc.php");
+
+// Including Bootstrap library.
+  call_required_libraries(array("jquery-min-3-1-1","bootstrap"));
 
 $popup = empty($_REQUEST['popup']) ? 0 : 1;
 $defaultFilterName = empty($_REQUEST['defaultFilterName']) ? null : $_REQUEST['defaultFilterName'];
@@ -27,7 +31,7 @@ $header0 = "";
 $header  = "";
 $coljson = "";
 $res = sqlStatement("SELECT option_id, title FROM list_options WHERE " .
-  "list_id = 'ptlistcols' ORDER BY seq, title");
+  "list_id = 'ptlistcols' and activity = '1' ORDER BY seq, title");
 while ($row = sqlFetchArray($res)) {
   $colname = $row['option_id'];
   $title = xl_list_label($row['title']);
@@ -40,7 +44,7 @@ while ($row = sqlFetchArray($res)) {
     $headerValue = $defaultFilterValue;
   }
   $header0 .= "   <td align='center'><input type='text' size='10' ";
-  $header0 .= "value='$headerValue' class='search_init' /></td>\n";
+  $header0 .= "value='$headerValue' class='form-control form-rounded' /></td>\n";
   if ($coljson) $coljson .= ", ";
   $coljson .= "{\"sName\": \"" . addcslashes($colname, "\t\r\n\"\\") . "\"}";
   ++$colcount;
@@ -50,18 +54,17 @@ while ($row = sqlFetchArray($res)) {
 <head>
 <?php html_header_show(); ?>
     <title><?php echo "Patient Finder"; ?></title>
-<link rel="stylesheet" href="<?php echo $css_header; ?>" type="text/css">
 
 <style type="text/css">
-@import "../../../library/js/datatables/media/css/demo_page.css";
-@import "../../../library/js/datatables/media/css/demo_table.css";
+@import "<?php echo $GLOBALS['standard_js_path'] ?>datatables/media/css/demo_page.css";
+@import "<?php echo $GLOBALS['standard_js_path'] ?>datatables/media/css/demo_table.css";
 .mytopdiv { float: left; margin-right: 1em; }
 </style>
 
-<script type="text/javascript" src="../../../library/js/datatables/media/js/jquery.js"></script>
-<script type="text/javascript" src="../../../library/js/datatables/media/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['standard_js_path'] ?>datatables/media/js/jquery.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['standard_js_path'] ?>datatables/media/js/jquery.dataTables.min.js"></script>
 <!-- this is a 3rd party script -->
-<script type="text/javascript" src="../../../library/js/datatables/extras/ColReorder/media/js/ColReorderWithResize.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['standard_js_path'] ?>datatables/extras/ColReorder/media/js/ColReorderWithResize.js"></script>
 
 <script language="JavaScript">
 
@@ -85,7 +88,7 @@ $(document).ready(function() {
   // language strings are included so we can translate them
   "oLanguage": {
    "sSearch"      : "<?php echo xla('Search all columns'); ?>:",
-   "sLengthMenu"  : "<?php echo xla('Show') . ' _MENU_ ' . xla('entries'); ?>",
+   "sLengthMenu"  : "<?php echo xla('Show ') . xla('entries:') . '<br>' . ' _MENU_ '; ?>",
    "sZeroRecords" : "<?php echo xla('No matching records found'); ?>",
    "sInfo"        : "<?php echo xla('Showing') . ' _START_ ' . xla('to{{range}}') . ' _END_ ' . xla('of') . ' _TOTAL_ ' . xla('entries'); ?>",
    "sInfoEmpty"   : "<?php echo xla('Nothing to show'); ?>",
@@ -99,16 +102,12 @@ $(document).ready(function() {
   }
  } );
 
- // This puts our custom HTML into the table header.
- $("div.mytopdiv").html("<form name='myform'><input type='checkbox' name='form_new_window' value='1'<?php
-  if (!empty($GLOBALS['gbl_pt_list_new_window'])) echo ' checked'; ?> /><?php
-  echo xlt('Open in New Window'); ?></form>");
 
  // This is to support column-specific search fields.
  // Borrowed from the multi_filter.html example.
  $("thead input").keyup(function () {
   // Filter on the column (the index) of this element
-	oTable.fnFilter( this.value, $("thead input").index(this) );
+    oTable.fnFilter( this.value, $("thead input").index(this) );
  });
 
  <?php if ( $defaultFilterValue !== null &&
@@ -128,36 +127,40 @@ $(document).ready(function() {
   {
       return;
   }
-  if (document.myform.form_new_window.checked) {
-   openNewTopWindow(newpid);
-  }
-  else {
+
    top.restoreSession();
-<?php if ($GLOBALS['concurrent_layout']) { ?>
    top.RTop.location = "../../patient_file/summary/demographics.php?set_pid=" + newpid;
-<?php } else { ?>
-   top.location = "../../patient_file/patient_file.php?set_pid=" + newpid;
-<?php } ?>
-  }
+
  } );
 
 });
 
-function openNewTopWindow(pid) {
- document.fnew.patientID.value = pid;
- top.restoreSession();
- document.fnew.submit();
-}
+
+
+// this will add bootstrap classes to search all columns and entries inputs
+$(document).ready(function() {
+
+  var search = $("#pt_table_filter :input");
+  var entries = $("#pt_table_length :input");
+  var paginate_pre = $('.paginate_disabled_previous');
+  var paginate_next = $('.paginate_disabled_next');
+
+  search.addClass("form-control form-rounded");
+  entries.addClass("form-control form-rounded");
+  paginate_pre.css({'height':'30px', 'background-color':'#888'});
+  paginate_next.css({'height':'30px', 'background-color':'#888'});
+});
 
 </script>
+    <link rel='stylesheet' href='<?php echo $css_header ?>' type='text/css'>
 
 </head>
-<body class="body_top">
+<body class="body_top" style="min-height:20px; padding: 19px; margin-bottom: 20px;">
 
-<div id="dynamic"><!-- TBD: id seems unused, is this div required? -->
+<div id="dynamic" style="padding-bottom: 30px">
 
 <!-- Class "display" is defined in demo_table.css -->
-<table cellpadding="0" cellspacing="0" border="0" class="display" id="pt_table">
+<table cellpadding="0" cellspacing="0" border="0" class="table table-hover " id="pt_table">
  <thead>
   <tr>
 <?php echo $header0; ?>
@@ -180,7 +183,6 @@ function openNewTopWindow(pid) {
 <form name='fnew' method='post' target='_blank' action='../main_screen.php?auth=login&site=<?php echo attr($_SESSION['site_id']); ?>'>
 <input type='hidden' name='patientID'      value='0' />
 </form>
-
 </body>
 </html>
 

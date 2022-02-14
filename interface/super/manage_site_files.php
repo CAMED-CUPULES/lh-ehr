@@ -18,8 +18,18 @@ require_once($GLOBALS['srcdir'].'/acl.inc');
 require_once($GLOBALS['srcdir'].'/htmlspecialchars.inc.php');
 /* for formData() */
 require_once($GLOBALS['srcdir'].'/formdata.inc.php');
+require_once("$srcdir/headers.inc.php");
+require_once("../../library/CsrfToken.php");
 
 if (!acl_check('admin', 'super')) die(htmlspecialchars(xl('Not authorized')));
+
+if (!empty($_POST)) {
+  if (!isset($_POST['token'])) {
+      CsrfToken::noTokenFoundError();
+  } else if (!(CsrfToken::verifyCsrfTokenAndCompareHash($_POST['token'], '/manage_site_files.php.theform'))) {
+      CsrfToken::incorrectToken();
+  }
+}
 
 // Prepare array of names of editable files, relative to the site directory.
 $my_files = array(
@@ -46,7 +56,7 @@ if (!in_array($form_filename, $my_files)) $form_filename = '';
 $filepath = "$OE_SITE_DIR/$form_filename";
 
 $imagedir     = "$OE_SITE_DIR/images";
-$educationdir = "$OE_SITE_DIR/documents/education";
+$educationdir = "$OE_SITE_DIR/filemanager/files/education";
 
 if (!empty($_POST['bn_save'])) {
   if ($form_filename) {
@@ -58,44 +68,61 @@ if (!empty($_POST['bn_save'])) {
     $form_filename = '';
   }
 
+  $number_of_files = count($_FILES['form_image']['name']);
+  for ($i=0; $i <$number_of_files ; $i++) { 
   // Handle image uploads.
-  if (is_uploaded_file($_FILES['form_image']['tmp_name']) && $_FILES['form_image']['size']) {
-    $form_dest_filename = $_POST['form_dest_filename'];
-    if ($form_dest_filename == '') {
-      $form_dest_filename = $_FILES['form_image']['name'];
+    if (is_uploaded_file($_FILES['form_image']['tmp_name'][$i]) && $_FILES['form_image']['size'][$i]) {
+      $finfo = finfo_open(FILEINFO_MIME_TYPE);
+      $mime = finfo_file($finfo, $_FILES['form_image']['tmp_name'][$i]);
+      finfo_close($finfo);
+      if ($mime == "image/png" OR $mime == "image/bmp" OR $mime == "image/jpeg" OR $mime == "image/gif") {
+        $form_dest_filename = $_POST['form_dest_filename'];
+        if ($form_dest_filename == '') {
+          $form_dest_filename = $_FILES['form_image']['name'][$i];
+        }
+        $form_dest_filename = basename($form_dest_filename);
+        if ($form_dest_filename == '') {
+          die(htmlspecialchars(xl('Cannot find a destination filename')));
+        }
+        $imagepath = "$imagedir/$form_dest_filename";
+        // If the site's image directory does not yet exist, create it.
+        if (!is_dir($imagedir)) {
+          mkdir($imagedir);
+        }
+        if (is_file($imagepath)) unlink($imagepath);
+        $tmp_name = $_FILES['form_image']['tmp_name'][$i];
+        if (!move_uploaded_file($_FILES['form_image']['tmp_name'][$i], $imagepath)) {
+          die(htmlspecialchars(xl('Unable to create') . " '$imagepath'"));
+        }
+      }
+      else {
+         die(htmlspecialchars(xl('the file you have uploaded is not an image')));
+      }
     }
-    $form_dest_filename = basename($form_dest_filename);
-    if ($form_dest_filename == '') {
-      die(htmlspecialchars(xl('Cannot find a destination filename')));
-    }
-    $imagepath = "$imagedir/$form_dest_filename";
-    // If the site's image directory does not yet exist, create it.
-    if (!is_dir($imagedir)) {
-      mkdir($imagedir);
-    }
-    if (is_file($imagepath)) unlink($imagepath);
-    $tmp_name = $_FILES['form_image']['tmp_name'];
-    if (!move_uploaded_file($_FILES['form_image']['tmp_name'], $imagepath)) {
-      die(htmlspecialchars(xl('Unable to create') . " '$imagepath'"));
-    }
-  }
+}
 
-  // Handle PDF uploads for patient education.
-  if (is_uploaded_file($_FILES['form_education']['tmp_name']) && $_FILES['form_education']['size']) {
-    $form_dest_filename = $_FILES['form_education']['name'];
-    $form_dest_filename = strtolower(basename($form_dest_filename));
-    if (substr($form_dest_filename, -4) != '.pdf') {
-      die(xlt('Filename must end with ".pdf"'));
-    }
-    $educationpath = "$educationdir/$form_dest_filename";
-    // If the site's education directory does not yet exist, create it.
-    if (!is_dir($educationdir)) {
-      mkdir($educationdir);
-    }
-    if (is_file($educationpath)) unlink($educationpath);
-    $tmp_name = $_FILES['form_education']['tmp_name'];
-    if (!move_uploaded_file($tmp_name, $educationpath)) {
-      die(text(xl('Unable to create') . " '$educationpath'"));
+  $number_of_files = count($_FILES['form_education']['name']);
+  for ($i=0; $i <$number_of_files ; $i++) { 
+    // Handle PDF uploads for patient education.
+    if (is_uploaded_file($_FILES['form_education']['tmp_name'][$i]) && $_FILES['form_education']['size'][$i]) {
+      $finfo = finfo_open(FILEINFO_MIME_TYPE);
+      $mime = finfo_file($finfo, $_FILES['form_image']['tmp_name'][$i]);
+      finfo_close($finfo);
+        $form_dest_filename = $_FILES['form_education']['name'][$i];
+        $form_dest_filename = strtolower(basename($form_dest_filename));
+        if (substr($form_dest_filename, -4) != '.pdf' && $mime == "application/pdf") {
+          die(xlt('The choosen file must be a pdf file'));
+        }
+        $educationpath = "$educationdir/$form_dest_filename";
+        // If the site's education directory does not yet exist, create it.
+        if (!is_dir($educationdir)) {
+          mkdir($educationdir);
+        }
+        if (is_file($educationpath)) unlink($educationpath);
+        $tmp_name = $_FILES['form_education']['tmp_name'][$i];
+        if (!move_uploaded_file($tmp_name, $educationpath)) {
+          die(text(xl('Unable to create') . " '$educationpath'"));
+        } 
     }
   }
 
@@ -125,7 +152,8 @@ function msfFileChanged() {
 
 <body class="body_top">
 <form method='post' action='manage_site_files.php' enctype='multipart/form-data'
- onsubmit='return top.restoreSession()'>
+ id="theform" name="theform" onsubmit='return top.restoreSession()'>
+<input type='hidden' name='token' value="<?php echo hash_hmac('sha256', (string) '/manage_site_files.php.theform', (string) $_SESSION['token']);?>" />
 
 <center>
 
@@ -165,7 +193,7 @@ function msfFileChanged() {
   <td valign='top' class='detail' nowrap>
    <?php echo htmlspecialchars(xl('Source File')); ?>:
    <input type="hidden" name="MAX_FILE_SIZE" value="12000000" />
-   <input type="file" name="form_image" size="40" />&nbsp;
+   <input type="file" name="form_image[]"  accept="image/*" multiple="multiple" />&nbsp;
    <?php echo htmlspecialchars(xl('Destination Filename')) ?>:
    <select name='form_dest_filename'>
     <option value=''>(<?php echo htmlspecialchars(xl('Use source filename')) ?>)</option>
@@ -191,20 +219,20 @@ function msfFileChanged() {
  </tr>
 
  <tr bgcolor='#dddddd' class='dehead'>
-  <td colspan='2' align='center'><?php echo text(xl('Upload Patient Education PDF to') . " $educationdir"); ?></td>
+  <td colspan='2' align='center'><?php echo text(xlt('Upload Patient Education PDF to .') . " $educationdir"); ?></td>
  </tr>
  <tr>
   <td valign='top' class='detail' nowrap>
    <?php echo xlt('Source File'); ?>:
-   <input type="file" name="form_education" size="40" />&nbsp;
-   <?php echo xlt('Name must be like codetype_code_language.pdf, for example icd9_274.11_en.pdf'); ?>
+   <input type="file" name="form_education[]" accept="application/pdf" multiple="multiple" />&nbsp;
+   <?php echo xlt('File name must end in .pdf.'); ?>
   </td>
  </tr>
 
 </table>
 
 <p>
-<input type='submit' name='bn_save' value='<?php echo htmlspecialchars(xl('Save')) ?>' />
+<input type='submit' class='cp-submit' name='bn_save' value='<?php echo htmlspecialchars(xl('Save')) ?>' />
 </p>
 
 </center>
@@ -212,4 +240,3 @@ function msfFileChanged() {
 </form>
 </body>
 </html>
-

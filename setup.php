@@ -1,3 +1,4 @@
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 <?php
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -13,15 +14,13 @@ ini_set("session.bug_compat_warn","off");
 
 $state = $_POST["state"];
 
-// Make this true for IPPF.
-$ippf_specific = false;
 
 // If this script was invoked with no site ID, then ask for one.
 if (!$COMMAND_LINE && empty($_REQUEST['site'])) {
   echo "<html>\n";
   echo "<head>\n";
   echo "<title>LibreHealth EHR Setup Tool</title>\n";
-  echo "<link rel='stylesheet' href='interface/themes/style_blue.css'>\n";
+  echo "<link rel='stylesheet' href='interface/themes/style_setup.css'>\n";
   echo "</head>\n";
   echo "<body>\n";
   echo "<p><b>Optional Site ID Selection</b></p>\n";
@@ -37,8 +36,9 @@ if (!$COMMAND_LINE && empty($_REQUEST['site'])) {
     "If it is a hostname then it is taken from the hostname in the URL. " .
     "Otherwise you must append \"?site=<i>siteid</i>\" to the URL used for " .
     "logging in.</p>\n";
-  echo "<p>It is OK for one of the sites to have \"default\" as its ID. This " .
-    "is the ID that will be used if it cannot otherwise be determined.</p>\n";
+  echo "<p>It is permitted to leave \"default\" as your site ID. This " .
+    "is the ID that will be used if it cannot otherwise be determined, but".
+    "it is better for system upgrades to NOT use the default site ID.</p>\n";
   echo "<form method='post'><input type='hidden' name='state' value='0'>" .
     "Site ID: <input type='text' name='site' value='default'>&nbsp;" .
     "<input type='submit' value='Continue'><br></form><br>\n";
@@ -46,8 +46,8 @@ if (!$COMMAND_LINE && empty($_REQUEST['site'])) {
   exit();
 }
 
-// Support "?site=siteid" in the URL, otherwise assume "default".
-$site_id = 'default';
+// Support "?site=siteid" in the URL, otherwise assume "clinic", to protect the default directory.
+$site_id = 'clinic';
 if (!$COMMAND_LINE && !empty($_REQUEST['site'])) {
   $site_id = trim($_REQUEST['site']);
 }
@@ -70,25 +70,24 @@ $billingDirectory2 = "$OE_SITE_DIR/era";
 $billingLogDirectory = "$OE_SITE_DIR/logs";
 $lettersDirectory = "$OE_SITE_DIR/letter_templates";
 $gaclWritableDirectory = dirname(__FILE__)."/gacl/admin/templates_c";
-$requiredDirectory1 = dirname(__FILE__)."/interface/main/calendar/modules/PostCalendar/pntemplates/compiled";
-$requiredDirectory2 = dirname(__FILE__)."/interface/main/calendar/modules/PostCalendar/pntemplates/cache";
 
-$zendModuleConfigFile = dirname(__FILE__)."/interface/modules/zend_modules/config/application.config.php";
+//$Libre_Get_Modules = dirname(__FILE__)."/modules/modules.config.php";  //TODO stub
 
 //These are files and dir checked before install for
 // correct permissions.
 if (is_dir($OE_SITE_DIR)) {
-  $writableFileList = array($installer->conffile,$zendModuleConfigFile);
-  $writableDirList = array($docsDirectory, $billingDirectory, $billingDirectory2, $lettersDirectory, $gaclWritableDirectory, $requiredDirectory1, $requiredDirectory2);
+  //$Libre_Get_Modules could be added to the 'writable' array. Remove if unneeded when module registry methods are finalized
+  $writableFileList = array($installer->conffile);
+  $writableDirList = array($docsDirectory, $billingDirectory, $billingDirectory2, $lettersDirectory, $gaclWritableDirectory);
 }
 else {
   $writableFileList = array();
-  $writableDirList = array($OE_SITES_BASE, $gaclWritableDirectory, $requiredDirectory1, $requiredDirectory2);
+  $writableDirList = array($OE_SITES_BASE, $gaclWritableDirectory);
 }
 
 // Include the sqlconf file if it exists yet.
 $config = 0;
-if (file_exists($OE_SITE_DIR)) {
+if (file_exists($OE_SITE_DIR)) {  //this looks at sqlconf file, NOT a DIR.  Rename.
   include_once($installer->conffile);
 }
 else if ($state > 3) {
@@ -100,7 +99,7 @@ else if ($state > 3) {
 <HTML>
 <HEAD>
 <TITLE>LibreHealth EHR Setup Tool</TITLE>
-<LINK REL=STYLESHEET HREF="interface/themes/style_sky_blue.css">
+<LINK REL=STYLESHEET HREF="interface/themes/style_setup.css">
 
 <style>
 .noclone { }
@@ -141,9 +140,9 @@ function cloneClicked() {
 <ul>
  <li>Access controls (php-GACL) are installed for fine-grained security, and can be administered in
      LibreHealth EHR's admin->acl menu.</li>
- <li>Reviewing <?php echo $OE_SITE_DIR; ?>/config.php is a good idea. This file
+ <li>Reviewing <?php echo text($OE_SITE_DIR); ?>/config.php is a good idea. This file
      contains some settings that you may want to change.</li>
- <li>There's much information and many extra tools bundled within the LibreHealth EHR installation directory. 
+ <li>There's much information and many extra tools bundled within the LibreHealth EHR installation directory.
      Please refer to LibreHealth EHR/Documentation. Many forms and other useful scripts can be found at LibreHealth EHR/contrib.</li>
  <li>To ensure a consistent look and feel through out the application using
      <a href='http://www.mozilla.org/products/firefox/'>Firefox</a> is recommended.</li>
@@ -158,7 +157,7 @@ We recommend you print these instructions for future reference.
   echo "<p>If you edited the PHP or Apache configuration files during this installation process, then we recommend you restart your Apache server before following below LibreHealth EHR link.</p>";
 } ?>
 <p>
- <a href='./?site=<?php echo $site_id; ?>'>Click here to start using LibreHealth EHR. </a>
+ <a href='./?site=<?php echo attr($site_id); ?>'>Click here to start using LibreHealth EHR. </a>
 </p>
 
 <?php
@@ -175,10 +174,10 @@ if (($config == 1) && ($state < 4)) {
 }
 else {
   switch ($state) {
-    
+
   case 1:
     echo "<b>Step $state</b><br><br>\n";
-    echo "Now I need to know whether you want me to create the database on my own or if you have already created the database for me to use.  For me to create the database, you will need to supply the MySQL root password.\n
+    echo "Now I need to know whether you want me to create the database on my own or if you have already created a database for me to use.  For me to create the database, you will need to supply the MySQL root password.\n
 <span class='title'> <br />NOTE: clicking on \"Continue\" may delete or cause damage to data on your system. Before you continue please backup your data.</span>
 <br><br>\n
 <FORM METHOD='POST'>\n
@@ -189,10 +188,10 @@ else {
 <br>\n
 <INPUT TYPE='SUBMIT' VALUE='Continue'><br></FORM><br>\n";
     break;
-    
+
   case 2:
     echo "<b>Step $state</b><br><br>\n";
-    echo "Now you need to supply the MySQL server information and path information. Detailed instructions on each item can be found in the <a href='INSTALL' target='_blank'><span STYLE='text-decoration: underline;'>'INSTALL'</span></a> manual file.
+    echo "Now you need to supply the MySQL server information and path information. Detailed instructions on each item can be found in the <a href='https://github.com/LibreHealthIO/LibreEHR/blob/master/INSTALL.md' target='_blank'><span STYLE='text-decoration: underline;'>'Installation'</span></a> manual file.
 <br><br>\n
 <FORM METHOD='POST'>
 <INPUT TYPE='HIDDEN' NAME='state' VALUE='3'>
@@ -202,7 +201,7 @@ else {
 <TR VALIGN='TOP'><TD COLSPAN=2><font color='red'>MYSQL SERVER:</font></TD></TR>
 <TR VALIGN='TOP'><TD><span class='text'>Server Host: </span></TD><TD><INPUT TYPE='TEXT' VALUE='localhost' NAME='server' SIZE='30'></TD><TD><span class='text'>(If you run MySQL and Apache/PHP on the same computer, then leave this as 'localhost'. If they are on separate computers, then enter the IP address of the computer running MySQL.)</span><br></TD></TR>
 <TR VALIGN='TOP'><TD><span class='text'>Server Port: </span></TD><TD><INPUT TYPE='TEXT' VALUE='3306' NAME='port' SIZE='30'></TD><TD><span class='text'>(This is the MySQL port. The default port for MySQL is 3306.)</span><br></TD></TR>
-<TR VALIGN='TOP'><TD><span class='text'>Database Name: </span></TD><TD><INPUT TYPE='TEXT' VALUE='libreehr' NAME='dbname' SIZE='30'></TD><TD><span class='text'>(This is the name of the LibreHealth EHR database in MySQL - 'LibreHealth EHR' is the recommended)</span><br></TD></TR>
+<TR VALIGN='TOP'><TD><span class='text'>Database Name: </span></TD><TD><INPUT TYPE='TEXT' VALUE='libreehr' NAME='dbname' SIZE='30'></TD><TD><span class='text'>(This is the name of the LibreHealth EHR database in MySQL - 'libreehr' is the recommended)</span><br></TD></TR>
 <TR VALIGN='TOP'><TD><span class='text'>Login Name: </span></TD><TD><INPUT TYPE='TEXT' VALUE='libreehr' NAME='login' SIZE='30'></TD><TD><span class='text'>(This is the name of the LibreHealth EHR login name in MySQL - 'libreehr' is the recommended)</span><br></TD></TR>
 <TR VALIGN='TOP'><TD><span class='text'>Password: </span></TD><TD><INPUT TYPE='PASSWORD' VALUE='' NAME='pass' SIZE='30'></TD><TD><span class='text'>(This is the Login Password for when PHP accesses MySQL - it should be at least 8 characters long and composed of both numbers and letters)</span><br></TD></TR>\n";
     if ($inst != 2) {
@@ -246,7 +245,7 @@ else {
     $siteslist = array();
     while (false !== ($sfname = readdir($dh))) {
       if (substr($sfname, 0, 1) == '.') continue;
-      if ($sfname == 'CVS'            ) continue;
+      if ($sfname == 'CVS'            ) continue;  //TODO REMOVE this
       if ($sfname == $site_id         ) continue;
       $sitedir = "$OE_SITES_BASE/$sfname";
       if (!is_dir($sitedir)               ) continue;
@@ -274,7 +273,7 @@ else {
       echo " <td class='text'>(Clone the source site's database instead of creating a fresh one.)</td>\n";
       echo "</tr>\n";
     }
-    
+
     echo "<TR VALIGN='TOP' class='noclone'><TD COLSPAN=2><font color='red'>LibreHealth EHR USER:</font></TD></TR>";
     echo "<TR VALIGN='TOP' class='noclone'><TD><span class='text'>Initial User:</span></TD><TD><INPUT SIZE='30' TYPE='TEXT' NAME='iuser' VALUE='admin'></TD><TD><span class='text'>(This is the login name of user that will be created for you. Limit this to one word.)</span></TD></TR>
 <TR VALIGN='TOP' class='noclone'><TD><span class='text'>Initial User Password:</span></TD><TD><INPUT SIZE='30' TYPE='PASSWORD' NAME='iuserpass' VALUE=''></TD><TD><span class='text'>(This is the password for the initial user account above.)</span></TD></TR>
@@ -293,7 +292,7 @@ else {
 
     // Form Validation
     //   (applicable if not cloning from another database)
-    if (empty($installer->clone_database)) { 
+    if (empty($installer->clone_database)) {
       if ( ! $installer->login_is_valid() ) {
         echo "ERROR. Please pick a proper 'Login Name'.<br>\n";
         echo "Click Back in browser to re-enter.<br>\n";
@@ -315,7 +314,7 @@ else {
       echo "Click Back in browser to re-enter.<br>\n";
       break;
     }
-    
+
     echo "<b>Step $state</b><br><br>\n";
     echo "Configuring LibreHealth EHR...<br><br>\n";
 
@@ -364,6 +363,8 @@ else {
       }
     }
 
+    
+
     // Skip below if database shell has already been created.
     if ($inst != 2) {
       echo "Creating database...\n";
@@ -404,7 +405,7 @@ else {
       echo "OK.<br>\n";
       flush();
     }
-    
+
     // Load the database files
     $dump_results = $installer->load_dumpfiles();
     if ( ! $dump_results ) {
@@ -462,7 +463,7 @@ else {
       echo "OK<br>\n";
       flush();
     }
-    
+
     if ( ! empty($installer->clone_database) ) {
       // Database was cloned, skip ACL setup.
       echo "Click 'continue' for further instructions.";
@@ -470,9 +471,9 @@ else {
     }
     else {
       echo "\n<br>Next step will install and configure access controls (php-GACL).<br>\n";
-      $next_state = 4; 
+      $next_state = 4;
     }
-    
+
     echo "
 <FORM METHOD='POST'>\n
 <INPUT TYPE='HIDDEN' NAME='state' VALUE='$next_state'>
@@ -489,7 +490,7 @@ else {
   case 4:
     echo "<b>Step $state</b><br><br>\n";
     echo "Installing and Configuring Access Controls (php-GACL)...<br><br>";
-    
+
     if ( ! $installer->install_gacl() ) {
       echo $installer->error_message;
       break;
@@ -500,20 +501,20 @@ else {
     }
 
     echo "Gave the '$installer->iuser' user (password is '$installer->iuserpass') administrator access.<br><br>";
-    
+
     echo "Done installing and configuring access controls (php-GACL).<br>";
     echo "Next step will configure PHP.";
-    
+
     echo "<br><FORM METHOD='POST'>\n
 <INPUT TYPE='HIDDEN' NAME='state' VALUE='5'>\n
 <INPUT TYPE='HIDDEN' NAME='site' VALUE='$site_id'>\n
 <INPUT TYPE='HIDDEN' NAME='iuser' VALUE='$installer->iuser'>\n
-<INPUT TYPE='HIDDEN' NAME='iuserpass' VALUE='$installer->iuserpass'>\n	
+<INPUT TYPE='HIDDEN' NAME='iuserpass' VALUE='$installer->iuserpass'>\n
 <br>\n
 <INPUT TYPE='SUBMIT' VALUE='Continue'><br></FORM><br>\n";
 
     break;
-    
+
   case 5:
     echo "<b>Step $state</b><br><br>\n";
     echo "Configuration of PHP...<br><br>\n";
@@ -527,10 +528,34 @@ else {
         $gotFileFlag = 1;
       }
     }
-echo "<li>To ensure proper functioning of LibreHealth EHR you must make sure that settings in php.ini file include  \"short_open_tag = On\", \"display_errors = Off\", \"register_globals = Off\", \"max_execution_time\" set to at least 60, \"max_input_time\" set to at least 90, \"post_max_size\" set to at least 30M, and \"memory_limit\" set to at least \"128M\".</li>\n";
-echo "<li>In order to take full advantage of the patient documents capability you must make sure that settings in php.ini file include \"file_uploads = On\", that \"upload_max_filesize\" is appropriate for your use and that \"upload_tmp_dir\" is set to a correct value that will work on your system.</li>\n";
+echo "<li>To ensure proper functioning of LibreHealth EHR you must make sure that settings in php.ini file include:
+<ul>
+<li>\"short_open_tag = On\"</li>
+<li>\"display_errors = Off\"</li>
+<li>\"max_execution_time\" set to at least 600</li>
+<li>\"max_input_time\" set to at least 600</li>
+<li>\"max_input_vars\" set to at least 3000</li>
+<li>\"post_max_size\" set to at least 32M</li>
+<li>\"memory_limit\" set to at least 512M</li>
+<li>\"session.gc_maxlifetime\" set to 14400</li>
+<li>\"error_reporting\" = E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE</li>
+</ul>";
+echo "
+<li>In order to take full advantage of the patient documents capability you must make sure that settings in php.ini file include:
+<ul>
+<li>\"file_uploads\" = On</li>
+<li>\"upload_max_filesize\" is appropriate for your use (32M seems good)</li>
+<li>\"upload_tmp_dir\" is set to a correct default value that will work on your system.</li>
+</ul>";
+
+echo "<li>To ensure proper functioning of LibreHealth EHR you must make sure that settings in MYSQL /etc/mysql/my.cnf file include:
+<ul>
+<li>\"key_buffer_size\" set to 2% of your system's RAM (Less thatn 2% recommended) </li>
+<li>\"innodb_buffer_pool_size\" set to 70% of available RAM.</li>
+</ul>";
+
 if (!$gotFileFlag) {
-    echo "<li>If you are having difficulty finding your php.ini file, then refer to the <a href='INSTALL' target='_blank'><span STYLE='text-decoration: underline;'>'INSTALL'</span></a> manual for suggestions.</li>\n";
+    echo "<li>If you are having difficulty finding your php.ini file, then refer to the <a href='https://github.com/LibreHealthIO/LibreEHR/blob/master/INSTALL.md' target='_blank'><span STYLE='text-decoration: underline;'>'Installation'</span></a> manual for suggestions.</li>\n";
 }
 echo "</ul>";
 
@@ -571,7 +596,7 @@ it is important to secure these directories. Additionally, some settings are req
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Deny from all<br>
 &nbsp;&nbsp;&lt;/Directory&gt;<br><br>";
 
-echo "If you are having difficulty finding your apache configuration file, then refer to the <a href='INSTALL' target='_blank'><span STYLE='text-decoration: underline;'>'INSTALL'</span></a> manual for suggestions.<br><br>\n";
+echo "If you are having difficulty finding your apache configuration file, then refer to the <a href='https://github.com/LibreHealthIO/LibreEHR/blob/master/INSTALL.md' target='_blank'><span STYLE='text-decoration: underline;'>'Installation'</span></a> manual for suggestions.<br><br>\n";
 echo "<br>We recommend you print these instructions for future reference.<br><br>";
 echo "Click 'continue' for further instructions.";
 
@@ -590,9 +615,9 @@ break;
 echo "<p>Welcome to LibreHealth EHR.  This utility will step you through the installation and configuration of LibreHealth EHR for your practice.</p>\n";
 echo "<ul><li>Before proceeding, be sure that you have a properly installed and configured MySQL server available, and a PHP configured webserver.</li>\n";
 
-echo "<li>Detailed installation instructions can be found in the <a href='INSTALL' target='_blank'><span STYLE='text-decoration: underline;'>'INSTALL'</span></a> manual file.</li>\n";
+echo "<li>Detailed installation instructions can be found in the <a href='https://github.com/LibreHealthIO/LibreEHR/blob/master/INSTALL.md' target='_blank'><span STYLE='text-decoration: underline;'>'Installation'</span></a> manual file.</li>\n";
 
-Echo "<li>If you are upgrading from a previous version, do NOT use this script.  Please read the 'Upgrading' section found in the <a href='INSTALL' target='_blank'><span STYLE='text-decoration: underline;'>'INSTALL'</span></a> manual file.</li></ul>";
+Echo "<li>If you are upgrading from a previous version, do NOT use this script.  Please read the 'Upgrading' section found in the <a href='https://github.com/LibreHealthIO/LibreEHR/blob/master/INSTALL.md' target='_blank'><span STYLE='text-decoration: underline;'>'Installation'</span></a> manual file.</li></ul>";
 
 if ($checkPermissions) {
 	echo "<p>We will now ensure correct file and directory permissions before starting installation:</p>\n";
@@ -609,7 +634,7 @@ if ($checkPermissions) {
 		}
 	}
 	if ($errorWritable) {
-		echo "<p><FONT COLOR='red'>You can't proceed until all above files are ready (world-writable).</FONT><br>\n";	
+		echo "<p><FONT COLOR='red'>You can't proceed until all above files are ready (world-writable).</FONT><br>\n";
 		echo "In linux, recommend changing file permissions with the 'chmod 666 filename' command.<br>\n";
 		echo "Fix above file permissions and then click the 'Check Again' button to re-check files.<br>\n";
     echo "<FORM METHOD='POST'><INPUT TYPE='SUBMIT' VALUE='Check Again'></p>" .

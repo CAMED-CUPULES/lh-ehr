@@ -3,7 +3,7 @@ To change this license header, choose License Headers in Project Properties.
 To change this template file, choose Tools | Templates
 and open the template in the editor.
 */
-/* 
+/*
     Created on : Jan 22, 2016, 2:13:40 AM
     Author     : yehster
 */
@@ -13,7 +13,7 @@ html
     margin: 0;
     padding: 0;
     border: 0;
-    height: 100%;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -35,6 +35,7 @@ body
     flex: 1 0 auto;
     margin: 0;
     padding: 0;
+
 }
 
 #mainBox > div
@@ -51,6 +52,7 @@ body
     flex-direction: column;
     padding: 0 0 0 0;
     margin: 0 0 0 0;
+    min-height: 100% !important;
 }
 
 #framesDisplay
@@ -60,9 +62,9 @@ body
     flex-direction: row;
 }
 
-#framesDisplay > div
+.frameDisplay
 {
-    flex: 1 0 auto;
+    flex: 100 0 auto;
     align-items: stretch;
     align-content:stretch;
     display: flex;
@@ -77,6 +79,25 @@ body
     border: 1px solid black;
 }
 
+#frameBarrier {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    visibility: hidden;
+}
+
+.handle {
+    width: 5px;
+    text-align: center;
+    /*z-index: 11;*/ /* this must not exist because it will be shown over menu dropdowns */
+    transition: all ease-in 0.1s;
+}
+
+.draggable { background: #BBCCFF; }
+
 .tabControls
 {
     margin: 0 0 0 0;
@@ -88,12 +109,25 @@ body
 .tabSpan
 {
     margin: 0 0 0 0;
-    padding:  0 0 0 0;
-    border: 2px solid black;
+    padding: 5px;
+    border-left: 1px;
+    border-right: 1px;
+    border-top: 1px;
+    border-bottom: 0;
+    border-style: solid;
+    border-color: black;
     border-radius: 6px 6px 0 0;
     cursor: pointer;
     font-weight: bold;
     flex: 0 1 auto;
+}
+
+.tabFloat
+{
+    border: 1px solid black;
+    border-radius: 6px;
+    margin-bottom: 5px;
+    margin-right: 2px;
 }
 
 .tabSpan:hover
@@ -114,7 +148,7 @@ body
 
     width: 99%;
     height:99%;
-    
+
     background-color: gray;
     z-index:1000;
     opacity: 0.5;
@@ -142,14 +176,14 @@ body
 
 div.closeDlgIframe {
 
-	position: absolute;
-	top: -12px;
-	right: -15px;
-	height: 30px;
-	width: 30px;
-	background: url('iframe_close.png') top left no-repeat;
-	cursor: pointer;
-	z-index: 10010;
+    position: absolute;
+    top: -12px;
+    right: -15px;
+    height: 30px;
+    width: 30px;
+    background: url('iframe_close.png') top left no-repeat;
+    cursor: pointer;
+    z-index: 10010;
 }
 
 .dialogIframe > iframe{
@@ -170,6 +204,11 @@ div.closeDlgIframe {
     display: block;
 }
 
+.patientDataColumn > div
+{
+    margin-top: -1%;
+}
+
 .patientEncountersColumn
 {
 }
@@ -181,6 +220,8 @@ div.closeDlgIframe {
     border: 1px solid black;
     background: white;
     cursor: pointer;
+    margin-top: -0.32%;
+    z-index: 0;
 }
 
 .patientEncounterList  table.encounters
@@ -197,6 +238,7 @@ div.closeDlgIframe {
 .patientEncounterList > div
 {
     padding: 2px;
+    margin-top: -2%;
 }
 .patientEncounterList:hover
 {
@@ -227,8 +269,25 @@ div.closeDlgIframe {
 #userData
 {
     position: absolute;
-    right: 0;
+    right: 10px;
 }
+
+#messagesNotification
+{
+    position: absolute;
+    right: 30px;
+    padding: 5px;
+    width: 150px;
+    cursor: pointer;
+    color: #1057c9;
+    font-weight: bold;
+}
+
+#messagesNotification:hover
+{
+    color: #fd5d00;
+}
+
 .patientInfo
 {
     padding: 1px;
@@ -249,4 +308,3 @@ div.closeDlgIframe {
 {
     color:red;
 }
-

@@ -18,7 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
+ * @author  Jerry Padgett <sjpadgett@gmail.com>
  * @author  Rod Roark <rod@sunsetsystems.com>
  * @author  Roberto Vasquez <robertogagliotta@gmail.com>
  * @link    http://librehealth.io
@@ -33,6 +34,11 @@ require_once("$srcdir/parse_era.inc.php");
 require_once("$srcdir/sl_eob.inc.php");
 require_once("$srcdir/formatting.inc.php");
 require_once("$srcdir/classes/class.ezpdf.php");//for the purpose of pdf creation
+require_once("$srcdir/options.inc.php");
+
+require_once("$srcdir/acl.inc");
+require_once("$srcdir/classes/Document.class.php");
+require_once("$srcdir/classes/Note.class.php");
 
 $DEBUG = 0; // set to 0 for production, 1 to test
 
@@ -41,6 +47,66 @@ $alertmsg = '';
 $where = '';
 $eraname = '';
 $eracount = 0;
+/* Load dependencies only if we need them */
+if( ! empty($GLOBALS['portal_onsite_enable']) ){
+    /*  Addition of onsite portal patient notify of invoice and reformated invoice - sjpadgett 01/2017 */
+    require_once("../../patient_portal/lib/portal_mail.inc");
+    require_once("../../patient_portal/lib/appsql.class.php");
+
+    function is_auth_portal( $pid = 0){
+        if ($pData = sqlQuery("SELECT * FROM `patient_data` WHERE `pid` = ?", array($pid) )) {
+            if($pData['allow_patient_portal'] != "YES")
+                return false;
+                else return true;
+        }
+        else return false;
+    }
+    function notify_portal($thispid, array $invoices, $template, $invid){
+        $builddir = $GLOBALS['OE_SITE_DIR'] .  '/onsite_portal_documents/templates/' . $thispid;
+        if( ! is_dir($builddir) )
+            mkdir($builddir, 0755, true);
+        if( fixup_invoice($template, $builddir.'/invoice'.$invid.'.tpl') != true ) return false;
+        if( SavePatientAudit( $thispid, $invoices ) != true ) return false; // this is all the invoice data for new invoicing feature to come
+        $note =  xl('You have an invoice due for payment. You may view and pay in your Patient Documents.');
+        if(sendMail( $_SESSION['authUserID'], $note, xlt('Bill/Collect'), '', '0', $_SESSION['authUserID'], $_SESSION['authUser'], $thispid, $invoices[0]['patient'] ) != 1)
+            return false;;
+        //addPnote($thispid, $note,1,1, xlt('Bill/Collect'), '-patient-');
+        return true;
+    }
+    function fixup_invoice($template, $ifile){
+        $data = file_get_contents($template);
+        if($data == "") return false;
+        if( !file_put_contents($ifile, $data) ) return false;
+        return true;
+    }
+    function SavePatientAudit( $pid, $invs ){
+        $appsql = new ApplicationTable();
+        try{
+            $audit = Array ();
+            $audit['patient_id'] = $pid;
+            $audit['activity'] = "invoice";
+            $audit['require_audit'] = "0";
+            $audit['pending_action'] = "payment";
+            $audit['action_taken'] = "";
+            $audit['status'] = "waiting transaction";
+            $audit['narrative'] = "Request patient online payment.";
+            $audit['table_action'] = '';
+            $audit['table_args'] =  json_encode($invs);
+            $audit['action_user'] = $pid;
+            $audit['action_taken_time'] = "";
+            $audit['checksum'] = "";
+            $edata = $appsql->getPortalAudit( $pid, 'payment', 'invoice', "waiting transaction", 0 );
+            //$audit['date'] = $edata['date'];
+            if( $edata['id'] > 0 ) $appsql->portalAudit( 'update', $edata['id'], $audit );
+            else{
+                $appsql->portalAudit( 'insert', '', $audit );
+            }
+        } catch( Exception $ex ){
+            return $ex;
+        }
+        return true;
+    }
+}
 
 // This is called back by parse_era() if we are processing X12 835's.
 //
@@ -82,38 +148,70 @@ function upload_file_to_client($file_to_send) {
   sleep(1);
 }
 function upload_file_to_client_pdf($file_to_send) {
-//Function reads a text file and converts to pdf.
+  //Function reads a HTML file and converts to pdf.
 
   global $STMT_TEMP_FILE_PDF;
+  global $srcdir;
+  if ($GLOBALS['statement_appearance'] == '1') {
+    require_once ($GLOBALS['modules_dir'] . "html2pdf/vendor/autoload.php");
+    $pdf2 = new HTML2PDF ($GLOBALS['pdf_layout'],
+    $GLOBALS['pdf_size'],
+    $GLOBALS['pdf_language'],
+                           true, // default unicode setting is true
+                           'UTF-8', // default encoding setting is UTF-8
+                           array($GLOBALS['pdf_left_margin'],$GLOBALS['pdf_top_margin'],$GLOBALS['pdf_right_margin'],$GLOBALS['pdf_bottom_margin']),
+                           $_SESSION['language_direction'] == 'rtl' ? true : false
+                           );
+    ob_start();
+    echo readfile($file_to_send, "r");//this file contains the HTML to be converted to pdf.
+    //echo $file;
+    $content = ob_get_clean();
+    // Fix a nasty html2pdf bug - it ignores document root!
+    global $web_root, $webserver_root;
+    $i = 0;
+    $wrlen = strlen($web_root);
+    $wsrlen = strlen($webserver_root);
+    while (true) {
+      $i = stripos($content, " src='/", $i + 1);
+      if ($i === false) break;
+      if (substr($content, $i+6, $wrlen) === $web_root &&
+        substr($content, $i+6, $wsrlen) !== $webserver_root) {
+        $content = substr($content, 0, $i + 6) . $webserver_root . substr($content, $i + 6 + $wrlen);
+      }
+    }
+    $pdf2->WriteHTML($content);
+    $temp_filename = $STMT_TEMP_FILE_PDF;
+    $content_pdf = $pdf2->Output($STMT_TEMP_FILE_PDF,'F');
+  } else {
   $pdf = new Cezpdf('LETTER');//pdf creation starts
-  $pdf->ezSetMargins(36,0,36,0);
+  $pdf->ezSetMargins(45,9,36,10);
   $pdf->selectFont($GLOBALS['fileroot'] . "/library/fonts/Courier.afm");
   $pdf->ezSetY($pdf->ez['pageHeight'] - $pdf->ez['topMargin']);
   $countline=1;
   $file = fopen($file_to_send, "r");//this file contains the text to be converted to pdf.
-  while(!feof($file))
-   {
+    while(!feof($file)) {
     $OneLine=fgets($file);//one line is read
-	 if(stristr($OneLine, "\014") == true && !feof($file))//form feed means we should start a new page.
-	  {
-	    $pdf->ezNewPage();
-	    $pdf->ezSetY($pdf->ez['pageHeight'] - $pdf->ez['topMargin']);
-		str_replace("\014", "", $OneLine);
-	  }
-	
-	if(stristr($OneLine, 'REMIT TO') == true || stristr($OneLine, 'Visit Date') == true || stristr($OneLine, 'Future Appointments') == true || stristr($OneLine, 'Current') == true)//lines are made bold when 'REMIT TO' or 'Visit Date' is there.
-	 $pdf->ezText('<b>'.$OneLine.'</b>', 12, array('justification' => 'left', 'leading' => 6)); 
-	else
-	 $pdf->ezText($OneLine, 12, array('justification' => 'left', 'leading' => 6)); 
-	 
-	$countline++; 
+     if(stristr($OneLine, "\014") == true && !feof($file))//form feed means we should start a new page.
+      {
+        $pdf->ezNewPage();
+        $pdf->ezSetY($pdf->ez['pageHeight'] - $pdf->ez['topMargin']);
+        str_replace("\014", "", $OneLine);
+      }
+
+    if(stristr($OneLine, 'REMIT TO') == true || stristr($OneLine, 'Visit Date') == true || stristr($OneLine, 'Future Appointments') == true || stristr($OneLine, 'Current') == true )//lines are made bold when 'REMIT TO' or 'Visit Date' is there.
+     $pdf->ezText('<b>'.$OneLine.'</b>', 12, array('justification' => 'left', 'leading' => 6));
+    else
+     $pdf->ezText($OneLine, 12, array('justification' => 'left', 'leading' => 6));
+
+    $countline++;
    }
-	
-	$fh = @fopen($STMT_TEMP_FILE_PDF, 'w');//stored to a pdf file
+
+    $fh = @fopen($STMT_TEMP_FILE_PDF, 'w');//stored to a pdf file
     if ($fh) {
       fwrite($fh, $pdf->ezOutput());
       fclose($fh);
     }
+  }
   header("Pragma: public");//this section outputs the pdf file to browser
   header("Expires: 0");
   header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
@@ -136,7 +234,18 @@ $today = date("Y-m-d");
 
   // Print or download statements if requested.
   //
-  if (($_POST['form_print'] || $_POST['form_download'] || $_POST['form_pdf']) && $_POST['form_cb']) {
+  if (($_POST['form_print'] || $_POST['form_download'] || $_POST['form_pdf'] || $_POST['form_portalnotify']) && isset($_POST['form_cb'])) {
+    //some global variables to keep count of statements ignored
+    //and corresponding patient names, in final print due to:
+    //1) having amount value less than minimum amount to print
+    $GLOBALS['stmts_below_minimum_amount'] = 0;
+    $GLOBALS['pat_below_minimum_amount'] = array();
+    //2) the patient is set to no statement
+    $GLOBALS['stmts_set_no_patient'] = 0;
+    $GLOBALS['pat_set_no_stmt'] = array();
+    //3) the insurance company does not allow statements
+    $GLOBALS['stmts_not_allowed_insurance_company'] = 0;
+    $GLOBALS['pat_not_allowed_insurance_company'] = array();
 
     $fhprint = fopen($STMT_TEMP_FILE, 'w');
     $sqlBindArray = array();
@@ -146,10 +255,20 @@ $today = date("Y-m-d");
         array_push($sqlBindArray, $key);
     }
     $where = substr($where, 4);
+  // need to only use summary invoice for multi visits
+
+
+if ($_POST['form_portalnotify']) {
+  foreach ($_POST['form_invpids'] as $key => $v) {
+            if ($_POST['form_cb'][$key]) {
+                array_push($inv_pid, key($v));
+  }
+        }
+    }
 
     $res = sqlStatement("SELECT " .
       "f.id, f.date, f.pid, f.encounter, f.stmt_count, f.last_stmt_date, f.last_level_closed, f.last_level_billed, f.billing_note as enc_billing_note, " .
-      "p.fname, p.mname, p.lname, p.street, p.city, p.state, p.postal_code, p.billing_note as pat_billing_note " .
+      "p.fname, p.mname, p.lname, p.street, p.city, p.state, p.statement_y_n, p.postal_code, p.billing_note as pat_billing_note " .
       "FROM form_encounter AS f, patient_data AS p " .
       "WHERE ( $where ) AND " .
       "p.pid = f.pid " .
@@ -170,7 +289,7 @@ $today = date("Y-m-d");
       // and start a new one.  This is an associative array:
       //
       //  cid     = same as pid
-      //  pid     = LibreEHR patient ID
+      //  pid     = LibreHealth EHR patient ID
       //  patient = patient name
       //  amount  = total amount due
       //  adjust  = adjustments (already applied to amount)
@@ -186,24 +305,61 @@ $today = date("Y-m-d");
       //    detail  = array of details, see invoice_summary.inc.php
       //
       if ($stmt['cid'] != $row['pid']) {
+        fwrite($fhprint, make_statement($stmt));
         if (!empty($stmt)) ++$stmt_count;
-        fwrite($fhprint, create_statement($stmt));
         $stmt['cid'] = $row['pid'];
         $stmt['pid'] = $row['pid'];
-		$stmt['dun_count'] = $row['stmt_count'];
-		$stmt['bill_note'] = $row['pat_billing_note'];
+        $stmt['statement_print'] = $row['statement_y_n'];
+        $stmt['dun_count'] = $row['stmt_count'];
+        $stmt['bill_note'] = $row['pat_billing_note'];
         $stmt['enc_bill_note'] = $row['enc_billing_note'];
-		$stmt['bill_level'] = $row['last_level_billed'];
-		$stmt['level_closed'] = $row['last_level_closed'];
+        $stmt['bill_level'] = $row['last_level_billed'];
+        $stmt['level_closed'] = $row['last_level_closed'];
         $stmt['patient'] = $row['fname'] . ' ' . $row['lname'];
+      $stmt['encounter'] = $row['encounter'];
+        $stmt['insconum1'] = "";
+        $stmt['insconum2'] = "";
+        $stmt['insconum3'] = "";
+        $stmt['insurance_no_statement_print_pri'] = "";
+        $stmt['insurance_no_statement_print_sec'] = "";
+        $stmt['insurance_no_statement_print_ter'] = "";
+        #If you use the field in demographics layout called
+        #guardiansname this will allow you to send statements to the parent
+        #of a child or a guardian etc
+      if(strlen($row['guardiansname']) == 0) {
         $stmt['to'] = array($row['fname'] . ' ' . $row['lname']);
+        } else {
+       $stmt['to'] = array($row['guardiansname']);
+     }
         if ($row['street']) $stmt['to'][] = $row['street'];
         $stmt['to'][] = $row['city'] . ", " . $row['state'] . " " . $row['postal_code'];
         $stmt['lines'] = array();
         $stmt['amount'] = '0.00';
-		$stmt['ins_paid'] = 0;
+        $stmt['ins_paid'] = 0;
         $stmt['today'] = $today;
         $stmt['duedate'] = $duedate;
+        $patient_id = $row['pid'];
+        for ($i = 1; $i <= 3; ++$i) {
+         $payerid = arGetPayerID($patient_id, $svcdate, $i);
+
+         if ($payerid) {
+
+          $tmp = sqlQuery("SELECT name, allow_print_statement FROM insurance_companies WHERE id = ?", array($payerid));
+          if ($i == 1) {
+          $stmt['insconum1'] = $tmp['name'];
+          $stmt['insurance_no_statement_print_pri'] = $tmp['allow_print_statement'];
+          }
+          if ($i == 2) {
+          $stmt['insconum2'] = $tmp['name'];
+          $stmt['insurance_no_statement_print_sec'] = $tmp['allow_print_statement'];
+          }
+          if ($i == 3) {
+          $stmt['insconum3'] = $tmp['name'];
+          $stmt['insurance_no_statement_print_ter'] = $tmp['allow_print_statement'];
+          }
+
+         }
+        }
       } else {
         // Report the oldest due date.
         if ($duedate < $stmt['duedate']) {
@@ -212,20 +368,17 @@ $today = date("Y-m-d");
       }
 
       // Recompute age at each invoice.
-      $stmt['age'] = round((strtotime($today) - strtotime($stmt['duedate'])) /
-        (24 * 60 * 60));
+    $stmt['age'] = round((strtotime($today) - strtotime($stmt['duedate'])) / (24 * 60 * 60));
 
       $invlines = ar_get_invoice_summary($row['pid'], $row['encounter'], true);
       foreach ($invlines as $key => $value) {
         $line = array();
         $line['dos']     = $svcdate;
         if ($GLOBALS['use_custom_statement']) {
-	      $line['desc']    = ($key == 'CO-PAY') ? "Patient Payment" : $value['code_text']; 
-		}
-        else 
-		{ 
+          $line['desc']    = ($key == 'CO-PAY') ? "Patient Payment" : $value['code_text'];
+      } else {
         $line['desc']    = ($key == 'CO-PAY') ? "Patient Payment" : "Procedure $key";
-	    } 
+        }
         $line['amount']  = sprintf("%.2f", $value['chg']);
         $line['adjust']  = sprintf("%.2f", $value['adj']);
         $line['paid']    = sprintf("%.2f", $value['chg'] - $value['bal']);
@@ -233,7 +386,7 @@ $today = date("Y-m-d");
         $line['detail']  = $value['dtl'];
         $stmt['lines'][] = $line;
         $stmt['amount']  = sprintf("%.2f", $stmt['amount'] + $value['bal']);
-		$stmt['ins_paid']  = $stmt['ins_paid'] + $value['ins'];
+        $stmt['ins_paid']  = $stmt['ins_paid'] + $value['ins'];
       }
 
       // Record that this statement was run.
@@ -242,10 +395,66 @@ $today = date("Y-m-d");
           "last_stmt_date = '$today', stmt_count = stmt_count + 1 " .
           "WHERE id = " . $row['id']);
       }
-    } // end for
+      if ($_POST['form_portalnotify']) {
+        if( ! is_auth_portal($stmt['pid']) ){
+            $alertmsg = xlt('Notification FAILED: Not Portal Authorized');
+            break;
+        }
+       $inv_count += 1;
+       $pvoice[] = $stmt;
+        // we don't want to send the portal multiple invoices, thus this. Last invoice for pid is summary.
+        if($inv_pid[$inv_count] != $inv_pid[$inv_count+1]){
+          fwrite($fhprint, make_statement($stmt));
+            if( !notify_portal($stmt['pid'], $pvoice, $STMT_TEMP_FILE, $stmt['pid'] . "-" . $stmt['encounter'])){
+               $alertmsg = xlt('Notification FAILED');
+                break;
+            }
+            $pvoice = array();
+            flush();
+            ftruncate($fhprint,0);
+       }
+        else    continue;
+    }
+
+  } // end while
 
     if (!empty($stmt)) ++$stmt_count;
-    fwrite($fhprint, create_statement($stmt));
+    fwrite($fhprint, make_statement($stmt));
+
+    //logging the reason for not printing some statements, their count
+    //and corresponding patient names
+    $countCase1 = (string)$GLOBALS['stmts_below_minimum_amount'];
+    $countCase2 = (string)$GLOBALS['stmts_set_no_patient'];
+    $countCase3 = (string)$GLOBALS['stmts_not_allowed_insurance_company'];
+    $reason = "\n\n";
+    if ($countCase1 != 0) {
+      //reason for case 1
+      $reason .= $countCase1 . " SELECTED STATEMENT(S) NOT PRINTED: ";
+      $reason .= "Statement amount value less than minimum amount value to print.";
+      $reason .= "\n  PATIENT NAMES: ";
+      foreach ($GLOBALS['pat_below_minimum_amount'] as $pat_name) {
+        $reason .= "{$pat_name} | ";
+      }
+    }
+    if ($countCase2 != 0) {
+      //reason for case 2
+      $reason .= "\n\n" . $countCase2 . " SELECTED STATEMENT(S) NOT PRINTED: ";
+      $reason .= "The patient is set to no statement";
+      $reason .= "\n  PATIENT NAMES: ";
+      foreach ($GLOBALS['pat_set_no_stmt'] as $pat_name) {
+        $reason .= "{$pat_name} | ";
+      }
+    }
+    if ($countCase3 != 0) {
+      //reason for case 3
+      $reason .= "\n\n" . $countCase3 . " SELECTED STATEMENT(S) NOT PRINTED: ";
+      $reason .= "The insurance company does not allow statements";
+      $reason .= "\n  PATIENT NAMES: ";
+      foreach ($GLOBALS['pat_not_allowed_insurance_company'] as $pat_name) {
+        $reason .= "{$pat_name} | ";
+      }
+    }
+    fwrite($fhprint, $reason);
     fclose($fhprint);
     sleep(1);
 
@@ -254,11 +463,14 @@ $today = date("Y-m-d");
       upload_file_to_client($STMT_TEMP_FILE);
     } elseif ($_POST['form_pdf']) {
       upload_file_to_client_pdf($STMT_TEMP_FILE);
+    } elseif ($_POST['form_portalnotify']) {
+        if($alertmsg == "")
+            $alertmsg = xl('Sending Invoice to Patient Portal Completed');
     } else { // Must be print!
       if ($DEBUG) {
         $alertmsg = xl("Printing skipped; see test output in") .' '. $STMT_TEMP_FILE;
       } else {
-        exec("$STMT_PRINT_CMD $STMT_TEMP_FILE");
+        exec(escapeshellcmd($STMT_PRINT_CMD) . " " . escapeshellarg($STMT_TEMP_FILE));
         if ($_POST['form_without']) {
           $alertmsg = xl('Now printing') .' '. $stmt_count .' '. xl('statements; invoices will not be updated.');
         } else {
@@ -270,7 +482,10 @@ $today = date("Y-m-d");
 ?>
 <html>
 <head>
-<?php html_header_show(); ?>
+<?php
+html_header_show();
+require_once("$srcdir/headers.inc.php");
+?>
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 <title><?php xl('EOB Posting - Search','e'); ?></title>
 <script type="text/javascript" src="../../library/textformat.js"></script>
@@ -412,7 +627,7 @@ function npopup(pid) {
    </select>
   </td>
   <td>
-   <input type='submit' name='form_search' value='<?php xl("Search","e"); ?>'>
+   <input type='submit' name='form_search' class="cp-submit" value='<?php xl("Search","e"); ?>'>
   </td>
  </tr>
 
@@ -450,7 +665,7 @@ if ($_POST['form_search'] || $_POST['form_print']) {
     // Handle .zip extension if present.  Probably won't work on Windows.
     if (strtolower(substr($_FILES['form_erafile']['name'], -4)) == '.zip') {
       rename($tmp_name, "$tmp_name.zip");
-      exec("unzip -p $tmp_name.zip > $tmp_name");
+      exec("unzip -p " . escapeshellarg($tmp_name . ".zip") . " > " . escapeshellarg($tmp_name));
       unlink("$tmp_name.zip");
     }
 
@@ -667,6 +882,9 @@ if ($_POST['form_search'] || $_POST['form_print']) {
   <td class="detail" align="left">
    <input type='checkbox' name='form_cb[<?php echo($row['id']) ?>]'<?php echo $isduept ?> />
    <?php if ($in_collections) echo "<b><font color='red'>IC</font></b>"; ?>
+     <?php if ( function_exists('is_auth_portal') ? is_auth_portal( $row['pid'] ) : false){
+        echo(' PPt');   echo("<input type='hidden' name='form_invpids[". $row['id'] ."][". $row['pid'] ."]' />"); $is_portal = true;
+        }?>
   </td>
 <?php } ?>
  </tr>
@@ -680,14 +898,18 @@ if ($_POST['form_search'] || $_POST['form_print']) {
 
 <p>
 <?php if ($eracount) { ?>
-<input type='button' value='<?php xl('Process ERA File','e')?>' onclick='processERA()' /> &nbsp;
+<input type='button' class="cp-submit" value='<?php xl('Process ERA File','e')?>' onclick='processERA()' /> &nbsp;
 <?php } else { ?>
-<input type='button' value='<?php xl('Select All','e')?>' onclick='checkAll(true)' /> &nbsp;
-<input type='button' value='<?php xl('Clear All','e')?>' onclick='checkAll(false)' /> &nbsp;
-<input type='submit' name='form_print' value='<?php xl('Print Selected Statements','e'); ?>' /> &nbsp;
-<input type='submit' name='form_download' value='<?php xl('Download Selected Statements','e'); ?>' /> &nbsp;
-<input type='submit' name='form_pdf' value='<?php xl('PDF Download Selected Statements','e'); ?>' /> &nbsp;
+<input type='button' class="cp-positive" value='<?php xl('Select All','e')?>' onclick='checkAll(true)' /> &nbsp;
+<input type='button' class="cp-negative" value='<?php xl('Clear All','e')?>' onclick='checkAll(false)' /> &nbsp;
+  <?php if ($GLOBALS['statement_appearance'] != '1') { ?>
+<input type='submit' class="cp-output" name='form_print' value='<?php xl('Print Selected Statements','e'); ?>' /> &nbsp;
+<input type='submit' class="cp-output" name='form_download' value='<?php xl('Download Selected Statements','e'); ?>' /> &nbsp;
 <?php } ?>
+<input type='submit' class="cp-output" name='form_pdf' value='<?php xl('PDF Download Selected Statements','e'); ?>' /> &nbsp;
+<?php if ($is_portal ){?>
+  <input type='submit' class="cp-misc" name='form_portalnotify' value='<?php xl('Notify via Patient Portal','e'); ?>' /> &nbsp;
+  <?php } }?>
 <input type='checkbox' name='form_without' value='1' /> <?php xl('Without Update','e'); ?>
 </p>
 

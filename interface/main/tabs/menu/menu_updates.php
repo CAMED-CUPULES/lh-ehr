@@ -20,13 +20,13 @@ function update_modules_menu(&$menu_list)
                     $acl_section = strtolower($modulerow['mod_directory']);
                     $disallowed[$acl_section] = zh_acl_check($_SESSION['authUserID'],$acl_section) ?  "" : "1";
                     $modulePath = "";
-                    $added 		= "";
+                    $added      = "";
                     if($modulerow['type'] == 0) {
                             $modulePath = $GLOBALS['customModDir'];
-                            $added		= "";
+                            $added      = "";
                     }
-                    else{ 	
-                            $added		= "index";
+                    else{   
+                            $added      = "index";
                             $modulePath = $GLOBALS['zendModDir'];
                     }
 

@@ -11,16 +11,16 @@
 // This script creates a backup tarball and sends it to the users's
 // browser for download.  The tarball includes:
 //
-// * an LibreEHR database dump (gzipped)
+// * an LibreHealth EHR database dump (gzipped)
 // * a phpGACL database dump (gzipped), if phpGACL is used and has
 //   its own database
-// * the LibreEHR web directory (.tar.gz)
+// * the LibreHealth EHR web directory (.tar.gz)
 // * the phpGACL web directory (.tar.gz), if phpGACL is used
 //
-// The LibreEHR web directory is important because it includes config-
+// The LibreHealth EHR web directory is important because it includes config-
 // uration files, patient documents, and possible customizations, and
 // also because the database structure is dependent on the installed
-// LibreEHR version.
+// LibreHealth EHR version.
 //
 // This script depends on execution of some external programs:
 // mysqldump & pg_dump.  It has been tested with Debian and Ubuntu
@@ -31,6 +31,7 @@ set_time_limit(0);
 require_once("../globals.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/log.inc");
+require_once("$srcdir/headers.inc.php");
 
 if (!extension_loaded('zlib'))
     {
@@ -142,27 +143,27 @@ $eventlog=0;  // Eventlog Flag
 if ($form_step == 0) {
   echo "<table>\n";
   echo " <tr>\n";
-  echo "  <td><input type='submit' name='form_create' value='$BTN_TEXT_CREATE' /></td>\n";
+  echo "  <td><input type='submit' class='cp-output' name='form_create' value='$BTN_TEXT_CREATE' /></td>\n";
   echo "  <td>" . xl('Create and download a full backup') . "</td>\n";
   echo " </tr>\n";
   // The config import/export feature is optional.
   if (!empty($GLOBALS['configuration_import_export'])) {
     echo " <tr>\n";
-    echo "  <td><input type='submit' name='form_export' value='$BTN_TEXT_EXPORT' /></td>\n";
+    echo "  <td><input type='submit' class='cp-misc' name='form_export' value='$BTN_TEXT_EXPORT' /></td>\n";
     echo "  <td>" . xl('Download configuration data') . "</td>\n";
     echo " </tr>\n";
     echo " <tr>\n";
-    echo "  <td><input type='submit' name='form_import' value='$BTN_TEXT_IMPORT' /></td>\n";
+    echo "  <td><input type='submit' class='cp-misc' name='form_import' value='$BTN_TEXT_IMPORT' /></td>\n";
     echo "  <td>" . xl('Upload configuration data') . "</td>\n";
     echo " </tr>\n";
     }
 // ViSolve : Add ' Create Log table backup Button'
    echo " <tr>\n";
-   echo "  <td><input type='submit' name='form_backup' value='$BTN_TEXT_CREATE_EVENTLOG' /></td>\n";
+   echo "  <td><input type='submit' class='cp-output' name='form_backup' value='$BTN_TEXT_CREATE_EVENTLOG' /></td>\n";
    echo "  <td>" . xl('Create Eventlog Backup') . "</td>\n";
    echo " </tr>\n";
    echo " <tr>\n";
-   echo "  <td></td><td class='text'><b>" . xl('Note')."</b>&nbsp;" . xl('Please refer to').'&nbsp;README-Log-Backup.txt&nbsp;'.xl('file in the Documentation directory to learn how to automate the process of creating log backups') . "</td>\n";
+   echo "  <td></td><td class='text'><strong>" . xl('Note').":</strong>&nbsp;" . xl('Please refer to').'&nbsp;README-Log-Backup.txt&nbsp;'.xl('file in the Documentation directory to learn how to automate the process of creating log backups') . "</td>\n";
    echo " </tr>\n";
   echo "</table>\n";
 }
@@ -568,13 +569,13 @@ if ($cmd) {
   {
     if ($eventlog==1)
      {
-	// ViSolve : Restore previous state, if backup fails.
+    // ViSolve : Restore previous state, if backup fails.
          $res=sqlStatement("drop table if exists log_comment_encrypt");
-       	 $res=sqlStatement("rename table log_comment_encrypt_backup to log_comment_encrypt");
+         $res=sqlStatement("rename table log_comment_encrypt_backup to log_comment_encrypt");
          $res=sqlStatement("drop table if exists log");
          $res=sqlStatement("rename table log_backup to log");
      }
-    die("\"$cmd\" returned $tmp2: $tmp0");
+    die("Return Status: $tmp2, Output: $tmp0");
   }
   //  ViSolve:  If the Eventlog is set, then clear the temporary table  -- Start here
   if ($eventlog==1)       {
@@ -583,7 +584,7 @@ if ($cmd) {
         echo "<br><b>";
         echo xl('Backup Successfully taken in')." ";
         echo  $BACKUP_EVENTLOG_DIR; 
-		echo "</b>";
+        echo "</b>";
      }
  //  ViSolve:  If the Eventlog is set, then clear the temporary table  -- Ends here
 }
@@ -638,7 +639,7 @@ function create_tar_archive($archiveName, $compressMethod, $itemArray) {
     $command = "tar -cpf $archiveName $files";
    }
    $temp0 = exec($command, $temp1, $temp2);
-   if ($temp2) die("\"$command\" returned $temp2: $temp0");
+   if ($temp2) die("Return Status: $temp2, Output: $temp0");
    return true;
   }
   return false;

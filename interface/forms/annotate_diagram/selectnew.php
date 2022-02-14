@@ -4,7 +4,7 @@
  *
  * This program is used to allow the selection of the forms in the Annotate Diagram form. 
  *
- * Copyright (C) 2016 Jerry Padgett sjpadgett@gmail.com
+ * Copyright (C) 2016-2017 Jerry Padgett sjpadgett@gmail.com
  * 
  * LICENSE: This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0 and the following 
  * Healthcare Disclaimer
@@ -35,14 +35,16 @@
  *
  * Rewrite and modifications by sjpadgett@gmail.com Padgetts Consulting 2016.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author  Jerry Padgett <sjpadgett@gmail.com> 
- * @author  Terry Hill <teryhill@librehealth.io>
  * @link    http://librehealth.io
  */
 
     $sanitize_all_escapes=true;
     $fake_register_globals=false;
+    include_once("../../globals.php");
+    require_once($GLOBALS['srcdir'].'/api.inc');
+
     $images_dir = '../../forms/annotate_diagram/diagram/';
     $images_per_row = 7;
 ?>
@@ -71,20 +73,16 @@ body {
 #diagram {
     box-sizing:border-box;
     min-width:65px;
-    min-height:65px;
-    //background-color:blue;
+    min-height:65px;    
     position: relative;
-    //border:3px solid black;
-}
+    }
 #diagram ul {padding-left:10px;}
 #diagram li {display: inline; margin-right: 3px;}
 #diagram li img{
     border:1px solid black;
     width:100%;
     max-width:75px;
-    //height:100%;
-    //max-height:85px;
-}
+   }
 </style>
 </head>
 <body>

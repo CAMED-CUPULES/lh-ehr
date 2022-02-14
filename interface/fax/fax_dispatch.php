@@ -1,10 +1,29 @@
 <?php
-// Copyright (C) 2006-2010 Rod Roark <rod@sunsetsystems.com>
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
+/*
+ * Fax Dispatch 
+ *
+ * Copyright (C) 2016-2017 Terry Hill <teryhill@librehealth.io> 
+ * Copyright (C) 2006-2010 Rod Roark <rod@sunsetsystems.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public License 
+ * as published by the Free Software Foundation; either version 3 
+ * of the License, or (at your option) any later version. 
+ * This program is distributed in the hope that it will be useful, 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+ * GNU General Public License for more details. 
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;. 
+ * 
+ * LICENSE: This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0
+ * See the Mozilla Public License for more details.
+ * If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * @package LibreHealth EHR 
+ * @author Rod Roark <rod@sunsetsystems.com>
+ * @link http://librehealth.io 
+ */
 
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
@@ -12,6 +31,9 @@ require_once("$srcdir/pnotes.inc");
 require_once("$srcdir/forms.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/gprelations.inc.php");
+require_once($GLOBALS['srcdir']."/formatting.inc.php");
+$DateFormat = DateFormatRead();
+$DateLocale = getLocaleCodeForDisplayLanguage($GLOBALS['language_default']);
 
 if ($_GET['file']) {
   $mode = 'fax';
@@ -42,7 +64,7 @@ $info_msg = "";
 //
 function getKittens($catid, $catstring, &$categories) {
   $cres = sqlStatement("SELECT id, name FROM categories " .
-    "WHERE parent = $catid ORDER BY name");
+    "WHERE parent = ? ORDER BY name", array($catid));
   $childcount = 0;
   while ($crow = sqlFetchArray($cres)) {
     ++$childcount;
@@ -66,7 +88,7 @@ function mergeTiffs() {
     $inames .= ' ' . escapeshellarg("$inbase.tif");
   }
   if (!$inames) die(xl("Internal error - no pages were selected!"));
-  $tmp0 = exec("cd '$faxcache'; tiffcp $inames temp.tif", $tmp1, $tmp2);
+  $tmp0 = exec("cd " . escapeshellarg($faxcache) . "; tiffcp $inames temp.tif", $tmp1, $tmp2);
   if ($tmp2) {
     $msg .= "tiffcp returned $tmp2: $tmp0 ";
   }
@@ -85,7 +107,7 @@ if ($_POST['form_save']) {
     if (!$patient_id) die(xl('Internal error - patient ID was not provided!'));
     // Compute the name of the target directory and make sure it exists.
     $docdir = $GLOBALS['OE_SITE_DIR'] . "/documents/$patient_id";
-    exec("mkdir -p '$docdir'");
+    exec("mkdir -p " . escapeshellarg($docdir));
 
     // If copying to patient documents...
     //
@@ -112,7 +134,7 @@ if ($_POST['form_save']) {
       $info_msg .= mergeTiffs();
       // The -j option here requires that libtiff is configured with libjpeg.
       // It could be omitted, but the output PDFs would then be quite large.
-      $tmp0 = exec("tiff2pdf -j -p letter -o '$target' '$faxcache/temp.tif'", $tmp1, $tmp2);
+      $tmp0 = exec("tiff2pdf -j -p letter -o " . escapeshellarg($target) . " " . escapeshellarg($faxcache . '/temp.tif'), $tmp1, $tmp2);
 
       if ($tmp2) {
         $info_msg .= "tiff2pdf returned $tmp2: $tmp0 ";
@@ -131,10 +153,8 @@ if ($_POST['form_save']) {
         sqlStatement($query);
         $query = "INSERT INTO categories_to_documents ( " .
           "category_id, document_id" .
-          " ) VALUES ( " .
-          "'$catid', '$newid' " .
-          ")";
-        sqlStatement($query);
+          " ) VALUES (?, ?)";
+        sqlStatement($query, array($catid, $newid));
       } // end not error
 
       // If we are posting a note...
@@ -143,7 +163,7 @@ if ($_POST['form_save']) {
         // See pnotes_full.php which uses this to auto-display the document.
         $note = "$ffname$ffmod$ffsuff";
         for ($tmp = $catid; $tmp;) {
-          $catrow = sqlQuery("SELECT name, parent FROM categories WHERE id = '$tmp'");
+          $catrow = sqlQuery("SELECT name, parent FROM categories WHERE id = ?", array($tmp));
           $note = $catrow['name'] . "/$note";
           $tmp = $catrow['parent'];
         }
@@ -178,28 +198,25 @@ if ($_POST['form_save']) {
       }
 
       if (!$info_msg) {
-        // The following is cloned from contrib/forms/scanned_notes/new.php:
-        //
+// scanned notes must be installed, and does not natively exist.
         $query = "INSERT INTO form_scanned_notes ( " .
           "notes " .
-          ") VALUES ( " .
-          "'" . $_POST['form_copy_sn_comments'] . "' " .
-          ")";
-        $formid = sqlInsert($query);
+          ") VALUES (?)";
+        $formid = sqlInsert($query, array($_POST['form_copy_sn_comments']));
         addForm($encounter_id, "Scanned Notes", $formid, "scanned_notes",
           $patient_id, $userauthorized);
         //
         $imagedir = $GLOBALS['OE_SITE_DIR'] . "/documents/$patient_id/encounters";
         $imagepath = "$imagedir/${encounter_id}_$formid.jpg";
         if (! is_dir($imagedir)) {
-          $tmp0 = exec('mkdir -p "' . $imagedir . '"', $tmp1, $tmp2);
+          $tmp0 = exec('mkdir -p ' . escapeshellarg($imagedir), $tmp1, $tmp2);
           if ($tmp2) die("mkdir returned $tmp2: $tmp0");
-          exec("touch '$imagedir/index.html'");
+          exec("touch " . escapeshellarg($imagedir . "/index.html"));
         }
         if (is_file($imagepath)) unlink($imagepath);
         // TBD: There may be a faster way to create this file, given that
         // we already have a jpeg for each page in faxcache.
-        $cmd = "convert -resize 800 -density 96 '$tmp_name' -append '$imagepath'";
+        $cmd = "convert -resize 800 -density 96 " . escapeshellarg($tmp_name) . " -append " . escapeshellarg($imagepath);
         $tmp0 = exec($cmd, $tmp1, $tmp2);
         if ($tmp2) die("\"$cmd\" returned $tmp2: $tmp0");
       }
@@ -250,8 +267,8 @@ if ($_POST['form_save']) {
     $cpstring = str_replace('{MESSAGE}'       , $form_message , $cpstring);
     fwrite($tmph, $cpstring);
     fclose($tmph);
-    $tmp0 = exec("cd $webserver_root/custom; " . $GLOBALS['hylafax_enscript'] .
-      " -o $tmpfn2 $tmpfn1", $tmp1, $tmp2);
+      $tmp0 = exec("cd " . escapeshellarg($webserver_root . '/custom') . "; " . escapeshellcmd($GLOBALS['hylafax_enscript']) .
+        " -o " . escapeshellarg($tmpfn2) . " " . escapeshellarg($tmpfn1), $tmp1, $tmp2);
     if ($tmp2) {
       $info_msg .= "enscript returned $tmp2: $tmp0 ";
     }
@@ -259,8 +276,8 @@ if ($_POST['form_save']) {
 
     // Send the fax as the cover page followed by the selected pages.
     $info_msg .= mergeTiffs();
-    $tmp0 = exec("sendfax -A -n $form_finemode -d " .
-      escapeshellarg($form_fax) . " $tmpfn2 '$faxcache/temp.tif'",
+    $tmp0 = exec("sendfax -A -n " . escapeshellarg($form_finemode) . " -d " .
+      escapeshellarg($form_fax) . " " . escapeshellarg($tmpfn2) . " " . escapeshellarg($faxcache . '/temp.tif'),
       $tmp1, $tmp2);
     if ($tmp2) {
       $info_msg .= "sendfax returned $tmp2: $tmp0 ";
@@ -335,21 +352,21 @@ $using_scanned_notes = $tmp['count'];
 // This will contain a .tif image as well as a .jpg image for each page.
 //
 if (! is_dir($faxcache)) {
-  $tmp0 = exec('mkdir -p "' . $faxcache . '"', $tmp1, $tmp2);
+  $tmp0 = exec('mkdir -p ' . escapeshellarg($faxcache), $tmp1, $tmp2);
   if ($tmp2) die("mkdir returned $tmp2: $tmp0");
   if (strtolower($ext) != '.tif') {
     // convert's default density for PDF-to-TIFF conversion is 72 dpi which is
     // not very good, so we upgrade it to "fine mode" fax quality.  It's really
     // better and faster if the scanner produces TIFFs instead of PDFs.
-    $tmp0 = exec("convert -density 203x196 '$filepath' '$faxcache/deleteme.tif'", $tmp1, $tmp2);
+    $tmp0 = exec("convert -density 203x196 " . escapeshellarg($filepath) . " " . escapeshellarg($faxcache . '/deleteme.tif'), $tmp1, $tmp2);
     if ($tmp2) die("convert returned $tmp2: $tmp0");
-    $tmp0 = exec("cd '$faxcache'; tiffsplit 'deleteme.tif'; rm -f 'deleteme.tif'", $tmp1, $tmp2);
+    $tmp0 = exec("cd " . escapeshellarg($faxcache) . "; tiffsplit 'deleteme.tif'; rm -f 'deleteme.tif'", $tmp1, $tmp2);
     if ($tmp2) die("tiffsplit/rm returned $tmp2: $tmp0");
   } else {
-    $tmp0 = exec("cd '$faxcache'; tiffsplit '$filepath'", $tmp1, $tmp2);
+    $tmp0 = exec("cd " . escapeshellarg($faxcache) . "; tiffsplit " . escapeshellarg($filepath), $tmp1, $tmp2);
     if ($tmp2) die("tiffsplit returned $tmp2: $tmp0");
   }
-  $tmp0 = exec("cd '$faxcache'; mogrify -resize 750x970 -format jpg *.tif", $tmp1, $tmp2);
+  $tmp0 = exec("cd " . escapeshellarg($faxcache) . "; mogrify -resize 750x970 -format jpg *.tif", $tmp1, $tmp2);
   if ($tmp2) die("mogrify returned $tmp2: $tmp0; ext is '$ext'; filepath is '$filepath'");
 }
 
@@ -388,19 +405,14 @@ div.section {
 
 </style>
 
-<style type="text/css">@import url(../../library/dynarch_calendar.css);</style>
 
 <script type="text/javascript" src="../../library/topdialog.js"></script>
 <script type="text/javascript" src="../../library/dialog.js"></script>
 <script type="text/javascript" src="../../library/textformat.js"></script>
-<script type="text/javascript" src="../../library/dynarch_calendar.js"></script>
-<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
-<script type="text/javascript" src="../../library/dynarch_calendar_setup.js"></script>
-<script type="text/javascript" src="../../library/js/jquery-1.2.2.min.js"></script>
+<script type="text/javascript" src="../../library/js/jquery-1.7.2.min.js"></script>
 
 <script language="JavaScript">
 
- var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';
 
 <?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
 
@@ -435,7 +447,7 @@ div.section {
 
  // This invokes the find-patient popup.
  function sel_patient() {
-  dlgopen('../main/calendar/find_patient_popup.php', '_blank', 500, 400);
+  dlgopen('<?php echo $GLOBALS["web_root"]; ?>/modules/calendar/find_patient_popup.php', '_blank', 500, 400);
  }
 
  // Check for errors when the form is submitted.
@@ -577,12 +589,7 @@ foreach ($categories as $catkey => $catname) {
        <td class='itemtitle' nowrap><?php xl('Document Date','e'); ?></td>
        <td>
         <input type='text' size='10' name='form_docdate' id='form_docdate'
-        value='<?php echo date('Y-m-d'); ?>'
-        title='<?php xl('yyyy-mm-dd date associated with this document','e'); ?>'
-        onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' />
-        <img src='../pic/show_calendar.gif' align='absbottom' width='24' height='22'
-        id='img_docdate' border='0' alt='[?]' style='cursor:pointer'
-        title='<?php xl('Click here to choose a date','e'); ?>' />
+        value='<?php echo htmlspecialchars(oeFormatShortDate(date('Y-m-d'))); ?>'/>
        </td>
       </tr>
      </table>
@@ -750,8 +757,16 @@ foreach ($jpgarray as $jfnamebase => $jfname) {
 </center>
 </form>
 
-<script language='JavaScript'>
- Calendar.setup({inputField:"form_docdate", ifFormat:"%Y-%m-%d", button:"img_docdate"});
+<link rel="stylesheet" href="../../library/css/jquery.datetimepicker.css">
+<script type="text/javascript" src="../../library/js/jquery.datetimepicker.full.min.js"></script>
+<script>
+    $(function() {
+        $("#form_docdate").datetimepicker({
+            timepicker: false,
+            format: "<?= $DateFormat; ?>"
+        });
+        $.datetimepicker.setLocale('<?= $DateLocale;?>');
+    });
 </script>
 
 </body>

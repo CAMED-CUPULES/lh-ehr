@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author  Craig Bezuidenhout <http://www.tajemo.co.za/>
- * @link    http://libreehr.org
+ * @link    http://librehealth.io
  */
 
   $fake_register_globals=false;
@@ -27,6 +27,10 @@
   require_once("$srcdir/htmlspecialchars.inc.php");
   require_once("$srcdir/acl.inc");    
   require_once("$srcdir/dated_reminder_functions.php"); 
+  require_once("$srcdir/formatting.inc.php");
+  require_once("$srcdir/headers.inc.php");
+  $DateFormat = DateFormatRead();
+  $DateLocale = getLocaleCodeForDisplayLanguage($GLOBALS['language_default']);
   
   
   $isAdmin =acl_check('admin', 'users'); 
@@ -87,12 +91,13 @@
   }
 ?> 
 <html>
-  <head>                                    
+  <head>
+    <?php 
+      call_required_libraries(array('bootstrap', 'jquery-min-3-1-1'));
+    ?>
     <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css"> 
-    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery.js"></script>  
-    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-calendar.js"></script>   
-    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery.grouprows.js"></script>     
-    <script src="<?php echo $GLOBALS['webroot'] ?>/library/js/grouprows.js"></script> 
+    <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-1.7.2.min.js"></script>
+
     <script language="JavaScript">   
       $(document).ready(function (){  
         $("#submitForm").click(function(){ 
@@ -105,9 +110,9 @@
                       echo '$("select option").removeAttr("selected");';
                     } 
                   ?>  
-                	return false;
+                    return false;
                }
-             )   
+             );
           return false;
         })
       }) 
@@ -120,64 +125,59 @@
              
 <?php     
   $allUsers = array(); 
-  $uSQL = sqlStatement('SELECT id, fname,	mname, lname  FROM  `users` WHERE  `active` = 1 AND `facility_id` > 0 AND `username` != ? AND `cal_ui`>1 ORDER BY lname',array(intval($_SESSION['authId'])));
+  $uSQL = sqlStatement('SELECT id, fname,   mname, lname  FROM  `users` WHERE  `active` = 1 AND `facility_id` > 0 AND id != ?',array(intval($_SESSION['authId'])));
   for($i=0; $uRow=sqlFetchArray($uSQL); $i++){ $allUsers[] = $uRow; } 
 ?>     
     <form method="get" id="logForm" onsubmit="return top.restoreSession()">         
-      <h1><?php echo xlt('Dated Message Log') ?></h1>  
-      <h2><?php echo xlt('filters') ?> :</h2>
-      <blockquote><?php echo xlt('Date The Message Was Sent') ?><br />
-<!----------------------------------------------------------------------------------------------------------------------------------------------------->  
-      <?php echo xlt('Start Date') ?> : <input id="sd" type="text" name="sd" value="" onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' title='<?php echo xla('yyyy-mm-dd'); ?>' />   &nbsp;&nbsp;&nbsp;  
-<!----------------------------------------------------------------------------------------------------------------------------------------------------->   
-      <?php echo xlt('End Date') ?> : <input id="ed" type="text" name="ed" value="" onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' title='<?php echo xla('yyyy-mm-dd'); ?>' />   <br /><br />
-<!----------------------------------------------------------------------------------------------------------------------------------------------------->   
-      </blockquote>
-      <table style="width:100%">
-        <tr>
-          <td style="width:50%">
-            <?php echo xlt('Sent By, Leave Blank For All') ?> : <br />                                    
-            <select style="width:100%;" id="sentBy" name="sentBy[]" multiple="multiple">
-              <option value="<?php echo attr(intval($_SESSION['authId'])); ?>"><?php echo xlt('Myself') ?></option>
-              <?php  
-                if($isAdmin)    
-                  foreach($allUsers as $user)
-                    echo '<option value="',attr($user['id']),'">',text($user['fname'].' '.$user['mname'].' '.$user['lname']),'</option>'; 
-              ?>
-            </select>   
-          </td>
-          <td style="width:50%">
-            <?php echo xlt('Sent To, Leave Blank For All') ?> : <br />      
-            <select style="width:100%" id="sentTo" name="sentTo[]" multiple="multiple">    
-              <option value="<?php echo attr(intval($_SESSION['authId'])); ?>"><?php echo xlt('Myself') ?></option>
-              <?php                    
-                if($isAdmin)
-                  foreach($allUsers as $user) 
-                    echo '<option value="',attr($user['id']),'">',text($user['fname'].' '.$user['mname'].' '.$user['lname']),'</option>';  
-              ?>
-            </select>  
-          </td>
-        </tr>
-      </table>
-<!-----------------------------------------------------------------------------------------------------------------------------------------------------> 
-      <input type="checkbox" name="processed" id="processed"><label for="processed"><?php echo xlt('Processed') ?></label>      
-<!-----------------------------------------------------------------------------------------------------------------------------------------------------> 
-      <input type="checkbox" name="pending" id="pending"><label for="pending"><?php echo xlt('Pending') ?></label>          
-<!----------------------------------------------------------------------------------------------------------------------------------------------------->  
-      <br /><br />  
-      <button value="Refresh" id="submitForm"><?php echo xlt('Refresh') ?></button>
-    </form>
+    <p class="lead"><?php echo xlt('Filters:')?></p><br/>
+    <p class="lead"><?php echo xlt('Date The Message Was Sent') ?></p>
+    <?php echo xlt('Start Date') ?> : <input class="form-control" style="display: inline-block; width: auto; margin-left:1px"  id="sd" type="text" name="sd" value=""title='<?php echo xla('yyyy-mm-dd'); ?>' />   &nbsp;&nbsp;&nbsp;
+    <?php echo xlt('End Date') ?> : <input class="form-control" style="display: inline-block; width: auto;" id="ed" type="text" name="ed" value="" title='<?php echo xla('yyyy-mm-dd'); ?>' />   <br /><br />
     
-    <div id="resultsDiv"></div> 
+    <table style="width:100%">
+      <tr>
+        <td style="width:50%">
+          <p class="lead"><?php echo xlt('Sent By, Leave Blank For All') ?>: </p>
+          <select class="form-control" style="width:100%;" id="sentBy" name="sentBy[]" multiple="multiple">
+            <option value="<?php echo attr(intval($_SESSION['authId'])); ?>"><?php echo xlt('Myself') ?></option>
+            <?php  
+              if($isAdmin)    
+                foreach($allUsers as $user)
+                  echo '<option value="',attr($user['id']),'">',text($user['fname'].' '.$user['mname'].' '.$user['lname']),'</option>'; 
+            ?>
+          </select>   
+        </td>
+        <td style="width:50%">
+          <p class="lead"><?php echo xlt('Sent To, Leave Blank For All') ?>: </p>
+          <select class="form-control" style="width:100%" id="sentTo" name="sentTo[]" multiple="multiple">    
+            <option value="<?php echo attr(intval($_SESSION['authId'])); ?>"><?php echo xlt('Myself') ?></option>
+            <?php                    
+              if($isAdmin)
+                foreach($allUsers as $user) 
+                  echo '<option value="',attr($user['id']),'">',text($user['fname'].' '.$user['mname'].' '.$user['lname']),'</option>';  
+            ?>
+          </select>  
+        </td>
+      </tr>
+    </table>
+    <input type="checkbox" name="processed" id="processed"><label for="processed"><?php echo xlt('Processed') ?></label>      
+    <input type="checkbox" name="pending" id="pending"><label for="pending"><?php echo xlt('Pending') ?></label>          
+    <br /><br />  
+    <button style="margin-bottom:16px" value="Refresh" class="cp-submit" id="submitForm"><?php echo xlt('Refresh') ?></button>
+  </form>
+  
+  <div id="resultsDiv"></div>
  
   </body> 
-<!-- stuff for the popup calendar -->
-<style type="text/css">@import url(<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar.css);</style>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar.js"></script>
-<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dynarch_calendar_setup.js"></script>
-<script language="Javascript"> 
-  Calendar.setup({inputField:"sd", ifFormat:"%Y-%m-%d", button:"img_begin_date", showsTime:'false'});  
-  Calendar.setup({inputField:"ed", ifFormat:"%Y-%m-%d", button:"img_begin_date", showsTime:'false'}); 
+<link rel="stylesheet" href="<?php echo $GLOBALS['webroot'] ?>/library/css/jquery.datetimepicker.css">
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery.datetimepicker.full.min.js"></script>
+<script>
+  $(function() {
+      $("#sd, #ed").datetimepicker({
+        timepicker: false,
+        format: "<?= $DateFormat; ?>"
+      });
+      $.datetimepicker.setLocale('<?= $DateLocale;?>');
+  });
 </script>
 </html> 

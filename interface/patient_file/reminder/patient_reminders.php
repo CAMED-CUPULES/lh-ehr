@@ -20,6 +20,7 @@ require_once("$srcdir/formdata.inc.php");
 require_once("$srcdir/reminders.php");
 require_once("$srcdir/clinical_rules.php");
 require_once "$srcdir/report_database.inc";
+require_once("$srcdir/headers.inc.php");
 ?>
 
 <html>
@@ -28,6 +29,9 @@ require_once "$srcdir/report_database.inc";
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 
 <style type="text/css">@import url(../../../library/dynarch_calendar.css);</style>
+
+<!--Adding Jquery Plugin-->
+<script type="text/javascript" src="../../../library/js/jquery.1.3.2.js"></script>
 <script type="text/javascript" src="../../../library/dialog.js"></script>
 <script type="text/javascript" src="../../../library/textformat.js"></script>
 <script type="text/javascript" src="../../../library/dynarch_calendar.js"></script>
@@ -36,7 +40,6 @@ require_once "$srcdir/report_database.inc";
 <script type="text/javascript" src="../../../library/js/common.js"></script>
 <script type="text/javascript" src="../../../library/js/fancybox/jquery.fancybox-1.2.6.js"></script>
 <link rel="stylesheet" type="text/css" href="../../../library/js/fancybox/jquery.fancybox-1.2.6.css" media="screen" />
-<script type="text/javascript" src="../../../library/js/jquery.1.3.2.js"></script>
 
 <script LANGUAGE="JavaScript">
 var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';
@@ -73,7 +76,7 @@ if ($mode == "simple") {
 
   // This invokes the find-patient popup.
   function sel_patient() {
-    dlgopen('../../main/calendar/find_patient_popup.php', '_blank', 500, 400);
+    dlgopen('<?php echo $GLOBALS["web_root"]; ?>/modules/calendar/find_patient_popup.php', '_blank', 500, 400);
   }
 </script>
 
@@ -89,7 +92,7 @@ if ($mode == "simple") {
     </span>
   </div>
   <div>
-    <a href="../summary/demographics.php" <?php if (!$GLOBALS['concurrent_layout']) echo "target='Main'"; ?> class="css_button" onclick="top.restoreSession()">
+    <a href="../summary/demographics.php" class="css_button" onclick="top.restoreSession()">
       <span><?php echo htmlspecialchars( xl('Back To Patient'), ENT_NOQUOTES);?></span>
     </a>
   </div>
@@ -203,10 +206,10 @@ else {
             <td>
               <div style='margin-left:15px'>
                 <?php if ($mode == "admin") { ?>
-                 <a id='process_button' href='#' class='css_button' onclick='return ReminderBatch("process")'>
+                 <a id='process_button' href='#' class='css_button cp-misc' onclick='return ReminderBatch("process")'>
                    <span><?php echo htmlspecialchars( xl('Process Reminders'), ENT_NOQUOTES); ?></span>
                  </a>
-                 <a id='process_send_button' href='#' class='css_button' onclick='return ReminderBatch("process_send")'>
+                 <a id='process_send_button' href='#' class='css_button cp-misc' onclick='return ReminderBatch("process_send")'>
                    <span><?php echo htmlspecialchars( xl('Process and Send Reminders'), ENT_NOQUOTES); ?></span>
                  </a>
                  <span id='status_span'></span>
@@ -244,7 +247,7 @@ else {
       <tbody>
 <?php
       $sql = "SELECT a.id, a.due_status, a.category, a.item, a.date_created, a.date_sent, a.voice_status, " .
-      				"a.sms_status, a.email_status, a.mail_status, b.fname, b.lname, b.hipaa_allowemail, b.hipaa_allowsms " .
+                    "a.sms_status, a.email_status, a.mail_status, b.fname, b.lname, b.hipaa_allowemail, b.hipaa_allowsms " .
         "FROM `patient_reminders` as a, `patient_data` as b " .
         "WHERE a.active='1' AND a.pid=b.pid " . $add_sql .
         "ORDER BY " . add_escape_custom($sortby) . " " .
@@ -343,7 +346,8 @@ $(document).ready(function(){
       rule: this.name,
       type: 'patient_reminder',
       setting: this.value,
-      patient_id: '<?php echo htmlspecialchars($patient_id, ENT_QUOTES); ?>'
+      patient_id: '<?php echo htmlspecialchars($patient_id, ENT_QUOTES); ?>',
+      token: "<?php echo $_SESSION['token'];?>" 
     });
   });
 
@@ -358,6 +362,7 @@ $(document).ready(function(){
 
    top.restoreSession();
    $.get("../../../library/ajax/collect_new_report_id.php",
+     {token: "<?php echo $_SESSION['token'];?>"},
      function(data){
        // Set the report id in page form
        $("#form_new_report_id").attr("value",data);
@@ -369,7 +374,8 @@ $(document).ready(function(){
        top.restoreSession();
        $.post("../../../library/ajax/execute_pat_reminder.php",
          {process_type: processType,
-          execute_report_id: $("#form_new_report_id").val()
+          execute_report_id: $("#form_new_report_id").val(),
+          token: "<?php echo $_SESSION['token'];?>"
          });
    });
 
@@ -381,7 +387,7 @@ $(document).ready(function(){
    top.restoreSession();
    // Do not send the skip_timeout_reset parameter, so don't close window before report is done.
    $.post("../../../library/ajax/status_report.php",
-     {status_report_id: report_id},
+     {status_report_id: report_id, token: "<?php echo $_SESSION['token'];?>" },
      function(data){
        if (data == "PENDING") {
          // Place the pending string in the DOM
@@ -405,4 +411,3 @@ $(document).ready(function(){
 </script>
 </body>
 </html>
-

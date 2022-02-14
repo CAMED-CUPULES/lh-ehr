@@ -1,8 +1,8 @@
 <?php
 /**
-* Sql functions/classes for LibreEHR.
+* Sql functions/classes for LibreHealth EHR.
 *
-* Includes classes and functions that LibreEHR uses
+* Includes classes and functions that LibreHealth EHR uses
 * to interact with SQL.
 *
 * LICENSE: This program is free software: you can redistribute it and/or modify
@@ -16,13 +16,13 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://opensource.org/licenses/gpl-license.php>.
 * 
-* @package   LibreEHR
-* @link      http://www.open-emr.org
+* @package   LibreHealth EHR
+* @link      http://librehealth.io
 */
 
 require_once(dirname(__FILE__) . "/sqlconf.php");
-require_once(dirname(__FILE__) . "/adodb/adodb.inc.php");
-require_once(dirname(__FILE__) . "/adodb/drivers/adodb-mysqli.inc.php");
+require_once(dirname(__FILE__) . "/../assets/adodb/adodb.inc.php");
+require_once(dirname(__FILE__) . "/../assets/adodb/drivers/adodb-mysqli.inc.php");
 require_once(dirname(__FILE__) . "/log.inc");
 
 /**
@@ -132,8 +132,14 @@ $GLOBALS['dbh'] = $database->_connectionID;
 if (!$disable_utf8_flag) {
  $success_flag = $database->Execute("SET NAMES 'utf8'");
   if (!$success_flag) {
-   error_log("PHP custom error: from libreehr library/sql.inc  - Unable to set up UTF8 encoding with mysql database: ".getSqlLastError(), 0);
+   error_log("PHP custom error: from librehealth ehr library/sql.inc  - Unable to set up UTF8 encoding with mysql database: ".getSqlLastError(), 0);
   }
+}
+
+// Turn off STRICT SQL
+$sql_strict_set_success = $database->Execute("SET sql_mode = ''");
+if (!$sql_strict_set_success) {
+ error_log("Unable to set strict sql setting: ".getSqlLastError(), 0);
 }
 
 // set up associations in adodb calls (not sure why above define
@@ -688,4 +694,58 @@ function sqlRollbackTrans()
     $GLOBALS['adodb']['db']->RollbackTrans();
 }
 
+// this function is used to sync the column structure of the parent table with the child table.Here it is used to sync the original table with the patient table.
+function sync_tables ($parent_table, $child_table) {
+$parent_array = array();
+$child_array = array();
+//get columns from parent table
+$sql = "SHOW COLUMNS FROM `$parent_table`";
+$result = sqlQ($sql);
+while($row = sqlFetchArray($result)){
+  array_push($parent_array, $row['Field']." ".$row['Type']);
+}
+
+//get columns from child table
+$sql = "SHOW COLUMNS FROM `$child_table`";
+$result = sqlQ($sql);
+while($row = sqlFetchArray($result)){
+  array_push($child_array, $row['Field']." ".$row['Type']);
+}
+
+//find the differences in their columns
+if (count($parent_array) > count($child_array)) {
+// it means a column is added to the parent table 
+//perform add column query here
+$diff = array_diff($parent_array, $child_array);
+foreach ($diff as $key) {
+  $first = "ALTER TABLE ";
+  $second = " ".$child_table." ";
+  $third = "ADD COLUMN ";
+  $fourth = $key;
+  $sql = $first.$second.$third.$fourth;
+  sqlStatement($sql);
+  return true;
+}
+
+}
+elseif(count($parent_array) < count($child_array)){
+//it means a column is deleted from the parent table
+$diff = array_diff($child_array, $parent_array);
+foreach ($diff as $key) {
+  $first = "ALTER TABLE ";
+  $second = " ".$child_table." ";
+  $third = "DROP ";
+  $fourth = strstr($key, " ", true);
+  $sql = $first.$second.$third.$fourth;
+  sqlStatement($sql);
+  return true;
+}
+
+}
+elseif (count($parent_array) == count($child_array)) {
+  //IT MEANS BOTH ARE FULLY SYNCED
+  return true;
+}
+
+}
 ?>

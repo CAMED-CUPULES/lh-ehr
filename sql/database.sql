@@ -1,10 +1,9 @@
 --
--- Database: `libreehr`
--- 
+-- Database: `libreehr`--
 
--- 
+--
 -- Table structure for table `addresses`
--- 
+--
 
 DROP TABLE IF EXISTS `addresses`;
 CREATE TABLE `addresses` (
@@ -72,11 +71,11 @@ CREATE TABLE IF NOT EXISTS `amendments_history` (
   `created_time` timestamp NOT NULL COMMENT 'created time',
 KEY amendment_history_id(`amendment_id`)
 ) ENGINE = MyISAM;
-    
 
--- 
+
+--
 -- Table structure for table `array`
--- 
+--
 
 DROP TABLE IF EXISTS `array`;
 CREATE TABLE `array` (
@@ -136,17 +135,17 @@ CREATE TABLE `background_services` (
   PRIMARY KEY  (`name`)
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Dumping data for table `background_services`
--- 
+--
 
 INSERT INTO `background_services` (`name`, `title`, `execute_interval`, `function`, `require_once`, `sort_order`) VALUES
 ('phimail', 'phiMail Direct Messaging Service', 5, 'phimail_check', '/library/direct_message_check.inc', 100);
 
 
--- 
+--
 -- Table structure for table `batchcom`
--- 
+--
 
 DROP TABLE IF EXISTS `batchcom`;
 CREATE TABLE `batchcom` (
@@ -161,9 +160,9 @@ CREATE TABLE `batchcom` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `billing`
--- 
+--
 
 DROP TABLE IF EXISTS `billing`;
 CREATE TABLE `billing` (
@@ -176,7 +175,7 @@ CREATE TABLE `billing` (
   `user` int(11) default NULL,
   `groupname` varchar(255) default NULL,
   `authorized` tinyint(1) default NULL,
-  `encounter` int(11) default NULL,
+  `encounter` bigint(20) default NULL,
   `code_text` longtext,
   `billed` tinyint(1) default NULL,
   `activity` tinyint(1) default NULL,
@@ -200,9 +199,9 @@ CREATE TABLE `billing` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `categories`
--- 
+--
 
 DROP TABLE IF EXISTS `categories`;
 CREATE TABLE `categories` (
@@ -217,11 +216,11 @@ CREATE TABLE `categories` (
   KEY `lft` (`lft`,`rght`)
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Dumping data for table `categories`
--- 
+--
 
-INSERT INTO `categories` VALUES (1, 'Categories', '', 0, 0, 25);
+INSERT INTO `categories` VALUES (1, 'Categories', '', 0, 0, 31);
 INSERT INTO `categories` VALUES (2, 'Lab Report', '', 1, 1, 2);
 INSERT INTO `categories` VALUES (3, 'Medical Record', '', 1, 3, 4);
 INSERT INTO `categories` VALUES (4, 'Patient Information', '', 1, 5, 10);
@@ -234,11 +233,14 @@ INSERT INTO `categories` VALUES (10, 'Patient Photograph', '', 4, 8, 9);
 INSERT INTO `categories` VALUES (11, 'CCR', '', 1, 19, 20);
 INSERT INTO `categories` VALUES (12, 'CCD', '', 1, 21, 22);
 INSERT INTO `categories` VALUES (13, 'CCDA', '', 1, 23, 24);
+INSERT INTO `categories` VALUES (14, 'Onsite Portal', '', 1, 25, 30);
+INSERT INTO `categories` VALUES (15, 'Patient', '', 14, 26, 27);
+INSERT INTO `categories` VALUES (16, 'Reviewed', '', 14, 28, 29);
 
 
--- 
+--
 -- Table structure for table `categories_seq`
--- 
+--
 
 DROP TABLE IF EXISTS `categories_seq`;
 CREATE TABLE `categories_seq` (
@@ -246,16 +248,16 @@ CREATE TABLE `categories_seq` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Dumping data for table `categories_seq`
--- 
+--
 
-INSERT INTO `categories_seq` VALUES (13);
+INSERT INTO `categories_seq` VALUES (16);
 
 
--- 
+--
 -- Table structure for table `categories_to_documents`
--- 
+--
 
 DROP TABLE IF EXISTS `categories_to_documents`;
 CREATE TABLE `categories_to_documents` (
@@ -265,9 +267,9 @@ CREATE TABLE `categories_to_documents` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `claims`
--- 
+--
 
 DROP TABLE IF EXISTS `claims`;
 CREATE TABLE `claims` (
@@ -327,7 +329,24 @@ INSERT INTO `clinical_plans` ( `id`, `pid`, `normal_flag`, `cqm_flag`, `cqm_2011
 INSERT INTO `clinical_plans` ( `id`, `pid`, `normal_flag`, `cqm_flag`, `cqm_measure_group` ) VALUES ('dm_plan', 0, 1, 0, '');
 INSERT INTO `clinical_plans` ( `id`, `pid`, `normal_flag`, `cqm_flag`, `cqm_measure_group` ) VALUES ('prevent_plan', 0, 1, 0, '');
 
+--
+-- Table structure for table `clinical_rules`
+--
 
+DROP TABLE IF EXISTS `clinical_rules`;
+CREATE TABLE `clinical_rules` (
+  `id` varchar(35) NOT NULL DEFAULT '',
+  `pid` bigint(20) NOT NULL DEFAULT '0' COMMENT '0 is default for all patients, while > 0 is id from patient_data table',
+  `active_alert_flag` tinyint(1) DEFAULT NULL COMMENT 'Active Alert Widget Module flag - note not yet utilized',
+  `passive_alert_flag` tinyint(1) DEFAULT NULL COMMENT 'Passive Alert Widget Module flag',
+  `patient_reminder_flag` tinyint(1) DEFAULT NULL COMMENT 'Clinical Reminder Module flag',
+  `release_version` varchar(255) NOT NULL DEFAULT '' COMMENT 'Clinical Rule Release Version',
+  `web_reference` varchar(255) NOT NULL DEFAULT '' COMMENT 'Clinical Rule Web Reference',
+  `access_control` varchar(255) NOT NULL DEFAULT 'patients:med' COMMENT 'ACO link for access control',
+  `pqrs_code` varchar(35) DEFAULT NULL COMMENT 'Measure number',
+  `pqrs_individual_2016_flag` tinyint(4) DEFAULT NULL COMMENT 'Is MIPS flag',
+  `pqrs_group_type` varchar(2) DEFAULT 'X' COMMENT 'XML output scheme type',
+  `active` tinyint(4) DEFAULT NULL COMMENT 'Is this measure turned on?');
 --
 -- Table structure for table `clinical_plans_rules`
 --
@@ -397,252 +416,6 @@ INSERT INTO `clinical_plans_rules` ( `plan_id`, `rule_id` ) VALUES ('prevent_pla
 INSERT INTO `clinical_plans_rules` ( `plan_id`, `rule_id` ) VALUES ('prevent_plan', 'rule_cs_prostate');
 
 
---
--- Table structure for table `clinical_rules`
---
-
-DROP TABLE IF EXISTS `clinical_rules`;
-CREATE TABLE `clinical_rules` (
-  `id` varchar(31) NOT NULL DEFAULT '' COMMENT 'Unique and maps to list_options list clinical_rules',
-  `pid` bigint(20) NOT NULL DEFAULT '0' COMMENT '0 is default for all patients, while > 0 is id from patient_data table',
-  `active_alert_flag` tinyint(1) COMMENT 'Active Alert Widget Module flag - note not yet utilized',
-  `passive_alert_flag` tinyint(1) COMMENT 'Passive Alert Widget Module flag',
-  `cqm_flag` tinyint(1) COMMENT 'Clinical Quality Measure flag (unable to customize per patient)',
-  `cqm_2011_flag` tinyint(1) COMMENT '2011 Clinical Quality Measure flag (unable to customize per patient)',
-  `cqm_2014_flag` tinyint(1) COMMENT '2014 Clinical Quality Measure flag (unable to customize per patient)',
-  `cqm_nqf_code` varchar(10) NOT NULL default '' COMMENT 'Clinical Quality Measure NQF identifier',
-  `cqm_pqri_code` varchar(10) NOT NULL default '' COMMENT 'Clinical Quality Measure PQRI identifier',
-  `amc_flag` tinyint(1) COMMENT 'Automated Measure Calculation flag (unable to customize per patient)',
-  `amc_2011_flag` tinyint(1) COMMENT '2011 Automated Measure Calculation flag for (unable to customize per patient)',
-  `amc_2014_flag` tinyint(1) COMMENT '2014 Automated Measure Calculation flag for (unable to customize per patient)',
-  `amc_code` varchar(10) NOT NULL default '' COMMENT 'Automated Measure Calculation indentifier (MU rule)',
-  `amc_code_2014` varchar(30) NOT NULL default '' COMMENT 'Automated Measure Calculation 2014 indentifier (MU rule)',
-  `amc_2014_stage1_flag` tinyint(1) COMMENT '2014 Stage 1 - Automated Measure Calculation flag for (unable to customize per patient)',
-  `amc_2014_stage2_flag` tinyint(1) COMMENT '2014 Stage 2 - Automated Measure Calculation flag for (unable to customize per patient)',
-  `patient_reminder_flag` tinyint(1) COMMENT 'Clinical Reminder Module flag',
-  `developer` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Clinical Rule Developer',
-  `funding_source` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Clinical Rule Funding Source',
-  `release_version` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Clinical Rule Release Version',
-  `web_reference` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Clinical Rule Web Reference',
-  `access_control` VARCHAR(255) NOT NULL DEFAULT 'patients:med' COMMENT 'ACO link for access control',
-  PRIMARY KEY  (`id`,`pid`)
-) ENGINE=InnoDB ;
-
---
--- Automated Measure Calculation (AMC) rules
---
--- MU 170.302(c) Maintain an up-to-date problem list of current and active diagnoses (2014-MU-AMC:170.314(g)(1)/(2)–4)
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `amc_2014_flag`, `amc_code_2014`, `patient_reminder_flag`, `amc_2014_stage1_flag` ) VALUES ('problem_list_amc', 0, 0, 0, 0, '', '', 1, 1, '170.302(c)', 1, '170.314(g)(1)/(2)–4', 0, 1);
--- MU 170.302(d) Maintain active medication list
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `amc_2014_flag`, `amc_code_2014`, `patient_reminder_flag`, `amc_2014_stage1_flag` ) VALUES ('med_list_amc', 0, 0, 0, 0, '', '', 1, 1, '170.302(d)', 1, '170.314(g)(1)/(2)–5', 0, 1);
--- MU 170.302(e) Maintain active medication allergy list
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `amc_2014_flag`, `amc_code_2014`, `patient_reminder_flag`, `amc_2014_stage1_flag` ) VALUES ('med_allergy_list_amc', 0, 0, 0, 0, '', '', 1, 1, '170.302(e)', 1, '170.314(g)(1)/(2)–6', 0, 1);
--- MU 170.302(f) Record and chart changes in vital signs
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('record_vitals_amc', 0, 0, 0, 0, '', '', 1, 1, '170.302(f)', 0);
--- MU 170.302(g) Record smoking status for patients 13 years old or older
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `amc_2014_flag`, `amc_code_2014`, `patient_reminder_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag` ) VALUES ('record_smoke_amc', 0, 0, 0, 0, '', '', 1, 1, '170.302(g)', 1, '170.314(g)(1)/(2)–11', 0, 1, 1);
--- MU 170.302(h) Incorporate clinical lab-test results into certified EHR technology as
---               structured data
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `amc_2014_flag`, `amc_code_2014`, `patient_reminder_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag` ) VALUES ('lab_result_amc', 0, 0, 0, 0, '', '', 1, 1, '170.302(h)', 1, '170.314(g)(1)/(2)–12', 0, 1, 1);
--- MU 170.302(j) The EP, eligible hospital or CAH who receives a patient from another
---               setting of care or provider of care or believes an encounter is relevant
---               should perform medication reconciliation
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `amc_2014_flag`, `amc_code_2014`, `patient_reminder_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag` ) VALUES ('med_reconc_amc', 0, 0, 0, 0, '', '', 1, 1, '170.302(j)', 1, '170.314(g)(1)/(2)–17', 0, 1, 1);
--- MU 170.302(m) Use certified EHR technology to identify patient-specific education resources
---              and provide those resources to the patient if appropriate
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag`, `amc_2014_flag`, `amc_code_2014`, `amc_2014_stage1_flag` ) VALUES ('patient_edu_amc', 0, 0, 0, 0, '', '', 1, 1, '170.302(m)', 0, 1, '170.314(g)(1)/(2)–16', 1);
--- MU 170.304(a) Use CPOE for medication orders directly entered by any licensed healthcare
---              professional who can enter orders into the medical record per state, local
---              and professional guidelines
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag`, `amc_2014_flag`, `amc_code_2014`, `amc_2014_stage1_flag` ) VALUES ('cpoe_med_amc', 0, 0, 0, 0, '', '', 1, 1, '170.304(a)', 0, 1, '170.314(g)(1)/(2)–7', 1);
--- MU 170.304(b) Generate and transmit permissible prescriptions electronically (eRx)
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('e_prescribe_amc', 0, 0, 0, 0, '', '', 1, 1, '170.304(b)', 0);
--- MU 170.304(c) Record demographics
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `amc_2014_flag`, `amc_code_2014`, `patient_reminder_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag` ) VALUES ('record_dem_amc', 0, 0, 0, 0, '', '', 1, 1, '170.304(c)', 1, '170.314(g)(1)/(2)–9', 0, 1, 1);
--- MU 170.304(d) Send reminders to patients per patient preference for preventive/follow up care
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag`, `amc_2014_flag`, `amc_code_2014`, `amc_2014_stage1_flag` ) VALUES ('send_reminder_amc', 0, 0, 0, 0, '', '', 1, 1, '170.304(d)', 0, 1, '170.314(g)(1)/(2)–13', 1);
--- MU 170.304(f) Provide patients with an electronic copy of their health information
---               (including diagnostic test results, problem list, medication lists,
---               medication allergies), upon request
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('provide_rec_pat_amc', 0, 0, 0, 0, '', '', 1, 1, '170.304(f)', 0);
--- MU 170.304(g) Provide patients with timely electronic access to their health information
---              (including lab results, problem list, medication lists, medication allergies)
---              within four business days of the information being available to the EP
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('timely_access_amc', 0, 0, 0, 0, '', '', 1, 1, '170.304(g)', 0);
--- MU 170.304(h) Provide clinical summaries for patients for each office visit
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag`, `amc_2014_flag`, `amc_code_2014`, `amc_2014_stage1_flag` ) VALUES ('provide_sum_pat_amc', 0, 0, 0, 0, '', '', 1, 1, '170.304(h)', 0, 1, '170.314(g)(1)/(2)–15', 1);
--- MU 170.304(i) The EP, eligible hospital or CAH who transitions their patient to
---               another setting of care or provider of care or refers their patient to
---               another provider of care should provide summary of care record for
---               each transition of care or referral
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_2011_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('send_sum_amc', 0, 0, 0, 0, '', '', 1, 1, '170.304(i)', 0);
---
--- Clinical Quality Measure (CQM) rules
---
--- NQF 0013 Hypertension: Blood Pressure Measurement
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `cqm_2014_flag` ) VALUES ('rule_htn_bp_measure_cqm', 0, 0, 0, 1, 1, '0013', '', 0, '', 0, 1);
--- NQF 0028a Tobacco Use Assessment
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_tob_use_assess_cqm', 0, 0, 0, 1, 1, '0028a', '', 0, '', 0);
--- NQF 0028b Tobacco Cessation Intervention
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_tob_cess_inter_cqm', 0, 0, 0, 1, 1, '0028b', '', 0, '', 0);
--- NQF 0421 (PQRI 128) Adult Weight Screening and Follow-Up
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `cqm_2014_flag` ) VALUES ('rule_adult_wt_screen_fu_cqm', 0, 0, 0, 1, 1, '0421', '128', 0, '', 0, 1);
--- NQF 0024 Weight Assessment and Counseling for Children and Adolescents
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, cqm_2014_flag ) VALUES ('rule_wt_assess_couns_child_cqm', 0, 0, 0, 1, 1, '0024', '', 0, '', 0, 1);
--- NQF 0041 (PQRI 110) Influenza Immunization for Patients >= 50 Years Old
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `cqm_2014_flag` ) VALUES ('rule_influenza_ge_50_cqm', 0, 0, 0, 1, 1, '0041', '110', 0, '', 0, 1);
--- NQF 0038 Childhood immunization Status
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_child_immun_stat_cqm', 0, 0, 0, 1, 1, '0038', '', 0, '', 0);
--- NQF 0043 (PQRI 111) Pneumonia Vaccination Status for Older Adults
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `cqm_2014_flag` ) VALUES ('rule_pneumovacc_ge_65_cqm', 0, 0, 0, 1, 1, '0043', '111', 0, '', 0, 1);
--- NQF 0055 (PQRI 117) Diabetes: Eye Exam
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_dm_eye_cqm', 0, 0, 0, 1, 1, '0055', '117', 0, '', 0);
--- NQF 0056 (PQRI 163) Diabetes: Foot Exam
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_dm_foot_cqm', 0, 0, 0, 1, 1, '0056', '163', 0, '', 0);
--- NQF 0059 (PQRI 1) Diabetes: HbA1c Poor Control
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `cqm_2014_flag` ) VALUES ('rule_dm_a1c_cqm', 0, 0, 0, 1, 1, '0059', '1', 0, '', 0, 1);
--- NQF 0061 (PQRI 3) Diabetes: Blood Pressure Management
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_dm_bp_control_cqm', 0, 0, 0, 1, 1, '0061', '3', 0, '', 0);
--- NQF 0064 (PQRI 2) Diabetes: LDL Management & Control
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_2011_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_dm_ldl_cqm', 0, 0, 0, 1, 1, '0064', '2', 0, '', 0);
--- NQF 0002 Rule Children Pharyngitis
-INSERT INTO `clinical_rules` (`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`) VALUES
-('rule_children_pharyngitis_cqm', 0, 0, 0, 1, '0002', '', 0, '', 0, 0, 0, '', 1, 1);
--- NQF 0101 Rule Fall Screening
-INSERT INTO `clinical_rules` (`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`) VALUES
-('rule_fall_screening_cqm', 0, 0, 0, 1, '0101', '', 0, '', 0, 0, 0, '', 1, 1);
--- NQF 0384 Rule Pain Intensity
-INSERT INTO `clinical_rules` (`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`) VALUES
-('rule_pain_intensity_cqm', 0, 0, 0, 1, '0384', '', 0, '', 0, 0, 0, '', 1, 1);
--- NQF 0038 Rule Child Immunization Status
-INSERT INTO `clinical_rules` (`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('rule_child_immun_stat_2014_cqm', 0, 0, 0, 1, '0038', '', 0, '', 0, 0, 0, '', 0, 1, 0, 0);
--- NQF 0028 Rule Tobacco Use
-INSERT INTO `clinical_rules` (`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('rule_tob_use_2014_cqm', 0, 0, 0, 1, '0028', '', 0, '', 0, 0, 0, '', 0, 1, 0, 0);
---
--- Standard clinical rules
---
--- Hypertension: Blood Pressure Measurement
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_htn_bp_measure', 0, 0, 1, 0, '', '', 0, '', 0);
--- Tobacco Use Assessment
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_tob_use_assess', 0, 0, 1, 0, '', '', 0, '', 0);
--- Tobacco Cessation Intervention
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_tob_cess_inter', 0, 0, 1, 0, '', '', 0, '', 0);
--- Adult Weight Screening and Follow-Up
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_adult_wt_screen_fu', 0, 0, 1, 0, '', '', 0, '', 0);
--- Weight Assessment and Counseling for Children and Adolescents
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_wt_assess_couns_child', 0, 0, 1, 0, '', '', 0, '', 0);
--- Influenza Immunization for Patients >= 50 Years Old
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_influenza_ge_50', 0, 0, 1, 0, '', '', 0, '', 0);
--- Pneumonia Vaccination Status for Older Adults
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_pneumovacc_ge_65', 0, 0, 1, 0, '', '', 0, '', 0);
--- Diabetes: Hemoglobin A1C
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_dm_hemo_a1c', 0, 0, 1, 0, '', '', 0, '', 0);
--- Diabetes: Urine Microalbumin
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_dm_urine_alb', 0, 0, 1, 0, '', '', 0, '', 0);
--- Diabetes: Eye Exam
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_dm_eye', 0, 0, 1, 0, '', '', 0, '', 0);
--- Diabetes: Foot Exam
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_dm_foot', 0, 0, 1, 0, '', '', 0, '', 0);
--- Cancer Screening: Mammogram
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_cs_mammo', 0, 0, 1, 0, '', '', 0, '', 0);
--- Cancer Screening: Pap Smear
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_cs_pap', 0, 0, 1, 0, '', '', 0, '', 0);
--- Cancer Screening: Colon Cancer Screening
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_cs_colon', 0, 0, 1, 0, '', '', 0, '', 0);
--- Cancer Screening: Prostate Cancer Screening
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_cs_prostate', 0, 0, 1, 0, '', '', 0, '', 0);
---
--- Rules to specifically demonstrate passing of NIST criteria
---
--- Coumadin Management - INR Monitoring
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_inr_monitor', 0, 0, 1, 0, '', '', 0, '', 0);
---
--- Rule to specifically demonstrate MU2 for CDR engine
---
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `access_control` ) VALUES ('rule_socsec_entry', 0, 0, 0, 0, '', '', 0, '', 0, 'admin:practice');
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_penicillin_allergy', 0, 0, 0, 0, '', '', 0, '', 0);
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_blood_pressure', 0, 0, 0, 0, '', '', 0, '', 0);
-INSERT INTO `clinical_rules` ( `id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag` ) VALUES ('rule_inr_measure', 0, 0, 0, 0, '', '', 0, '', 0);
---
--- MU2 AMC rules
---
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('image_results_amc', 0, 0, 0, 0, '', '', 1, '', 0, 0, 1, '170.314(g)(1)/(2)–20', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('family_health_history_amc', 0, 0, 0, 0, '', '', 1, '', 0, 0, 1, '170.314(g)(1)/(2)–21', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('electronic_notes_amc', 0, 0, 0, 0, '', '', 1, '', 0, 0, 1, '170.314(g)(1)/(2)–22', 0, 0, 0, 1);
-INSERT INTO `clinical_rules`
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('secure_messaging_amc', 0, 0, 0, 0, '', '', 1, '', 0, 0, 1, '170.314(g)(1)/(2)-19', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('view_download_transmit_amc', 0, 0, 0, 0, '', '', 1, '', 0, 0, 1, '170.314(g)(1)/(2)–14', 0, 0, 1, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('cpoe_radiology_amc', 0, 0, 0, 0, '', '', 1, '170.304(a)', 0, 0, 1, '170.314(g)(1)/(2)–7', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('cpoe_proc_orders_amc', 0, 0, 0, 0, '', '', 1, '170.304(a)', 0, 0, 1, '170.314(g)(1)/(2)–7', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('send_reminder_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.304(d)', 0, 0, 1, '170.314(g)(1)/(2)–13', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('cpoe_med_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.304(a)', 0, 0, 1, '170.314(g)(1)/(2)–7', 0, 0, 1, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('patient_edu_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.302(m)', 0, 0, 1, '170.314(g)(1)/(2)–16', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('record_vitals_1_stage1_amc', 0, 0, 0, 0, '', '', 1, '170.302(f)', 0, 0, 1, '170.314(g)(1)/(2)–10', 0, 0, 0, 0);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('record_vitals_2_stage1_amc', 0, 0, 0, 0, '', '', 1, '170.302(f)', 0, 0, 1, '170.314(g)(1)/(2)–10', 0, 0, 1, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('record_vitals_3_stage1_amc', 0, 0, 0, 0, '', '', 1, '170.302(f)', 0, 0, 1, '170.314(g)(1)/(2)–10', 0, 0, 1, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('record_vitals_4_stage1_amc', 0, 0, 0, 0, '', '', 1, '170.302(f)', 0, 0, 1, '170.314(g)(1)/(2)–10', 0, 0, 1, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('record_vitals_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.302(f)', 0, 0, 1, '170.314(g)(1)/(2)–10', 0, 0, 0, 0);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('provide_sum_pat_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.304(h)', 0, 0, 1, '170.314(g)(1)/(2)–15', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('vdt_stage2_amc', 0, 0, 0, 0, '', '', 1, '', 0, 0, 1, '170.314(g)(1)/(2)–14', 0, 0, 1, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('send_sum_stage1_amc', 0, 0, 0, 0, '', '', 1, '170.304(i)', 0, 0, 1, '170.314(g)(1)/(2)–18', 0, 0, 1, 0);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('send_sum_1_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.304(i)', 0, 0, 1, '170.314(g)(1)/(2)–18', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('send_sum_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.304(i)', 0, 0, 1, '170.314(g)(1)/(2)–18', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('e_prescribe_stage1_amc', 0, 0, 0, 0, '', '', 1, '170.304(b)', 0, 0, 1, '170.314(g)(1)/(2)–8', 0, 0, 1, 0);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('e_prescribe_1_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.304(b)', 0, 0, 1, '170.314(g)(1)/(2)–8', 0, 0, 0, 1);
-INSERT INTO `clinical_rules` 
-(`id`, `pid`, `active_alert_flag`, `passive_alert_flag`, `cqm_flag`, `cqm_nqf_code`, `cqm_pqri_code`, `amc_flag`, `amc_code`, `patient_reminder_flag`, `amc_2011_flag`, `amc_2014_flag`, `amc_code_2014`, `cqm_2011_flag`, `cqm_2014_flag`, `amc_2014_stage1_flag`, `amc_2014_stage2_flag`) VALUES
-('e_prescribe_2_stage2_amc', 0, 0, 0, 0, '', '', 1, '170.304(b)', 0, 0, 1, '170.314(g)(1)/(2)–8', 0, 0, 0, 1);
-
-
-
---
--- Table structure for table `clinical_rules_log
---
 
 DROP TABLE IF EXISTS `clinical_rules_log`;
 CREATE TABLE `clinical_rules_log` (
@@ -651,8 +424,8 @@ CREATE TABLE `clinical_rules_log` (
   `pid` bigint(20) NOT NULL DEFAULT '0',
   `uid` bigint(20) NOT NULL DEFAULT '0',
   `category` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'An example category is clinical_reminder_widget',
-  `value` TEXT,
-  `new_value` TEXT,
+  `value` TEXT NOT NULL,
+  `new_value` TEXT NOT NULL,
   PRIMARY KEY (`id`),
   KEY `pid` (`pid`),
   KEY `uid` (`uid`),
@@ -661,9 +434,9 @@ CREATE TABLE `clinical_rules_log` (
 
 
 
--- 
+--
 -- Table structure for table `codes`
--- 
+--
 
 DROP TABLE IF EXISTS `codes`;
 CREATE TABLE `codes` (
@@ -688,9 +461,9 @@ CREATE TABLE `codes` (
   KEY `code_type` (`code_type`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
--- 
+--
 -- Table structure for table `syndromic_surveillance`
--- 
+--
 
 DROP TABLE IF EXISTS `syndromic_surveillance`;
 CREATE TABLE `syndromic_surveillance` (
@@ -703,9 +476,9 @@ CREATE TABLE `syndromic_surveillance` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `config`
--- 
+--
 
 DROP TABLE IF EXISTS `config`;
 CREATE TABLE `config` (
@@ -721,9 +494,9 @@ CREATE TABLE `config` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `config_seq`
--- 
+--
 
 DROP TABLE IF EXISTS `config_seq`;
 CREATE TABLE `config_seq` (
@@ -731,9 +504,9 @@ CREATE TABLE `config_seq` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Dumping data for table `config_seq`
--- 
+--
 
 INSERT INTO `config_seq` VALUES (0);
 
@@ -764,7 +537,7 @@ CREATE TABLE `dated_reminders` (
 --
 
 DROP TABLE IF EXISTS `dated_reminders_link`;
-CREATE TABLE `dated_reminders_link` (           
+CREATE TABLE `dated_reminders_link` (
   `dr_link_id` int(11) NOT NULL AUTO_INCREMENT,
   `dr_id` int(11) NOT NULL,
   `to_id` int(11) NOT NULL,
@@ -774,9 +547,9 @@ CREATE TABLE `dated_reminders_link` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1;
 
 
--- 
+--
 -- Table structure for table `direct_message_log`
--- 
+--
 
 DROP TABLE IF EXISTS `direct_message_log`;
 CREATE TABLE `direct_message_log` (
@@ -797,9 +570,9 @@ CREATE TABLE `direct_message_log` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `documents`
--- 
+--
 
 DROP TABLE IF EXISTS `documents`;
 CREATE TABLE `documents` (
@@ -909,9 +682,9 @@ INSERT INTO `documents_legal_categories` (`dlc_id`, `dlc_category_type`, `dlc_ca
 (5, 1, 'Layout Form', 0),
 (6, 2, 'Layout Signed', 5);
 
--- 
+--
 -- Table structure for table `drug_inventory`
--- 
+--
 
 DROP TABLE IF EXISTS `drug_inventory`;
 CREATE TABLE `drug_inventory` (
@@ -932,9 +705,9 @@ CREATE TABLE `drug_inventory` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `drug_sales`
--- 
+--
 
 DROP TABLE IF EXISTS `drug_sales`;
 CREATE TABLE `drug_sales` (
@@ -956,9 +729,9 @@ CREATE TABLE `drug_sales` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `drug_templates`
--- 
+--
 
 DROP TABLE IF EXISTS `drug_templates`;
 CREATE TABLE `drug_templates` (
@@ -973,9 +746,9 @@ CREATE TABLE `drug_templates` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `drugs`
--- 
+--
 
 DROP TABLE IF EXISTS `drugs`;
 CREATE TABLE `drugs` (
@@ -1037,9 +810,9 @@ CREATE TABLE `eligibility_verification` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1;
 
 
--- 
+--
 -- Table structure for table `employer_data`
--- 
+--
 
 DROP TABLE IF EXISTS `employer_data`;
 CREATE TABLE `employer_data` (
@@ -1154,9 +927,9 @@ CREATE TABLE `standardized_tables_track` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `facility`
--- 
+--
 
 -- 
 -- Table structure for table `facility`
@@ -1192,15 +965,15 @@ CREATE TABLE `facility` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 ;
 
--- 
+--
 -- Dumping data for table `facility`
--- 
+--
 
 INSERT INTO `facility` VALUES (3, 'Your Clinic Name Here','','000-000-0000', '000-000-0000', '', '', '', '', '', '', NULL, NULL, 1, 1, 0, NULL, '', '', '', '', '','#99FFFF','0', '');
 
--- 
+--
 -- Table structure for table `facility_user_ids`
--- 
+--
 
 DROP TABLE IF EXISTS `facility_user_ids`;
 CREATE TABLE  `facility_user_ids` (
@@ -1214,9 +987,9 @@ CREATE TABLE  `facility_user_ids` (
 ) ENGINE=InnoDB  AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `fee_sheet_options`
--- 
+--
 
 DROP TABLE IF EXISTS `fee_sheet_options`;
 CREATE TABLE `fee_sheet_options` (
@@ -1225,9 +998,9 @@ CREATE TABLE `fee_sheet_options` (
   `fs_codes` varchar(255) default NULL
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Dumping data for table `fee_sheet_options`
--- 
+--
 
 INSERT INTO `fee_sheet_options` VALUES ('1New Patient', '1Brief', 'CPT4|99201|');
 INSERT INTO `fee_sheet_options` VALUES ('1New Patient', '2Limited', 'CPT4|99202|');
@@ -1241,9 +1014,9 @@ INSERT INTO `fee_sheet_options` VALUES ('2Established Patient', '4Extended', 'CP
 INSERT INTO `fee_sheet_options` VALUES ('2Established Patient', '5Comprehensive', 'CPT4|99215|');
 
 
--- 
+--
 -- Table structure for table `form_dictation`
--- 
+--
 
 DROP TABLE IF EXISTS `form_dictation`;
 CREATE TABLE `form_dictation` (
@@ -1260,9 +1033,9 @@ CREATE TABLE `form_dictation` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `form_encounter`
--- 
+--
 
 DROP TABLE IF EXISTS `form_encounter`;
 CREATE TABLE `form_encounter` (
@@ -1283,19 +1056,26 @@ CREATE TABLE `form_encounter` (
   `stmt_count`        int  NOT NULL DEFAULT 0,
   `provider_id` INT(11) DEFAULT '0' COMMENT 'default and main provider for this visit',
   `supervisor_id` INT(11) DEFAULT '0' COMMENT 'supervising provider, if any, for this visit',
+  `ordering_physician` INT(11) DEFAULT '0' COMMENT 'ordering provider , if any, for this visit',
+  `referring_physician` INT(11) DEFAULT '0' COMMENT 'referring provider, if any, for this visit',
+  `contract_physician` INT(11) DEFAULT '0' COMMENT 'contract provider, if any, for this visit',
   `invoice_refno` varchar(31) NOT NULL DEFAULT '',
   `referral_source` varchar(31) NOT NULL DEFAULT '',
   `billing_facility` INT(11) NOT NULL DEFAULT 0,
   `external_id` VARCHAR(20) DEFAULT NULL,
+  `eft_number` varchar(80) DEFAULT NULL,
+  `claim_number` varchar(80) DEFAULT NULL,
+  `document_image` varchar(80) DEFAULT NULL,
+  `seq_number` varchar(80) DEFAULT NULL,
   PRIMARY KEY  (`id`),
   KEY `pid_encounter` (`pid`, `encounter`),
   KEY `encounter_date` (`date`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `form_annotate_diagram`
--- 
+--
 
 DROP TABLE IF EXISTS `form_annotate_diagram`;
 CREATE TABLE `form_annotate_diagram` (
@@ -1312,9 +1092,9 @@ CREATE TABLE `form_annotate_diagram` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Table structure for table `form_misc_billing_options`
--- 
+--
 
 DROP TABLE IF EXISTS `form_misc_billing_options`;
 CREATE TABLE `form_misc_billing_options` (
@@ -1354,9 +1134,9 @@ CREATE TABLE `form_misc_billing_options` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `form_reviewofs`
--- 
+--
 
 DROP TABLE IF EXISTS `form_reviewofs`;
 CREATE TABLE `form_reviewofs` (
@@ -1479,9 +1259,9 @@ CREATE TABLE `form_reviewofs` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `form_ros`
--- 
+--
 
 DROP TABLE IF EXISTS `form_ros`;
 CREATE TABLE `form_ros` (
@@ -1631,9 +1411,9 @@ CREATE TABLE `form_ros` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `form_soap`
--- 
+--
 
 DROP TABLE IF EXISTS `form_soap`;
 CREATE TABLE `form_soap` (
@@ -1652,9 +1432,9 @@ CREATE TABLE `form_soap` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `form_vitals`
--- 
+--
 
 DROP TABLE IF EXISTS `form_vitals`;
 CREATE TABLE `form_vitals` (
@@ -1685,9 +1465,9 @@ CREATE TABLE `form_vitals` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `forms`
--- 
+--
 
 DROP TABLE IF EXISTS `forms`;
 CREATE TABLE `forms` (
@@ -1708,9 +1488,9 @@ CREATE TABLE `forms` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `geo_country_reference`
--- 
+--
 
 DROP TABLE IF EXISTS `geo_country_reference`;
 CREATE TABLE `geo_country_reference` (
@@ -1722,9 +1502,9 @@ CREATE TABLE `geo_country_reference` (
   KEY `IDX_COUNTRIES_NAME` (`countries_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=240 ;
 
--- 
+--
 -- Dumping data for table `geo_country_reference`
--- 
+--
 
 INSERT INTO `geo_country_reference` VALUES (1, 'Afghanistan', 'AF', 'AFG');
 INSERT INTO `geo_country_reference` VALUES (2, 'Albania', 'AL', 'ALB');
@@ -1967,9 +1747,9 @@ INSERT INTO `geo_country_reference` VALUES (238, 'Zambia', 'ZM', 'ZMB');
 INSERT INTO `geo_country_reference` VALUES (239, 'Zimbabwe', 'ZW', 'ZWE');
 
 
--- 
+--
 -- Table structure for table `geo_zone_reference`
--- 
+--
 
 DROP TABLE IF EXISTS `geo_zone_reference`;
 CREATE TABLE `geo_zone_reference` (
@@ -1980,9 +1760,9 @@ CREATE TABLE `geo_zone_reference` (
   PRIMARY KEY  (`zone_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=83 ;
 
--- 
+--
 -- Dumping data for table `geo_zone_reference`
--- 
+--
 
 INSERT INTO `geo_zone_reference` VALUES (1, 223, 'AL', 'Alabama');
 INSERT INTO `geo_zone_reference` VALUES (2, 223, 'AK', 'Alaska');
@@ -2068,9 +1848,9 @@ INSERT INTO `geo_zone_reference` VALUES (81, 61, 'ACT', 'Australian Capital Terr
 INSERT INTO `geo_zone_reference` VALUES (82, 61, 'VIC', 'Victoria');
 
 
--- 
+--
 -- Table structure for table `groups`
--- 
+--
 
 DROP TABLE IF EXISTS `groups`;
 CREATE TABLE `groups` (
@@ -2081,9 +1861,9 @@ CREATE TABLE `groups` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `history_data`
--- 
+--
 
 DROP TABLE IF EXISTS `history_data`;
 CREATE TABLE `history_data` (
@@ -2149,33 +1929,7 @@ CREATE TABLE `history_data` (
   `value_2` varchar(255) default NULL,
   `additional_history` text,
   `exams` text,
-  `usertext11` TEXT,
-  `usertext12` varchar(255) NOT NULL DEFAULT '',
-  `usertext13` varchar(255) NOT NULL DEFAULT '',
-  `usertext14` varchar(255) NOT NULL DEFAULT '',
-  `usertext15` varchar(255) NOT NULL DEFAULT '',
-  `usertext16` varchar(255) NOT NULL DEFAULT '',
-  `usertext17` varchar(255) NOT NULL DEFAULT '',
-  `usertext18` varchar(255) NOT NULL DEFAULT '',
-  `usertext19` varchar(255) NOT NULL DEFAULT '',
-  `usertext20` varchar(255) NOT NULL DEFAULT '',
-  `usertext21` varchar(255) NOT NULL DEFAULT '',
-  `usertext22` varchar(255) NOT NULL DEFAULT '',
-  `usertext23` varchar(255) NOT NULL DEFAULT '',
-  `usertext24` varchar(255) NOT NULL DEFAULT '',
-  `usertext25` varchar(255) NOT NULL DEFAULT '',
-  `usertext26` varchar(255) NOT NULL DEFAULT '',
-  `usertext27` varchar(255) NOT NULL DEFAULT '',
-  `usertext28` varchar(255) NOT NULL DEFAULT '',
-  `usertext29` varchar(255) NOT NULL DEFAULT '',
-  `usertext30` varchar(255) NOT NULL DEFAULT '',
-  `userdate11` date DEFAULT NULL,
-  `userdate12` date DEFAULT NULL,
-  `userdate13` date DEFAULT NULL,
-  `userdate14` date DEFAULT NULL,
-  `userdate15` date DEFAULT NULL,
-  `userarea11` text,
-  `userarea12` text,
+  `risk_factors` text,
   PRIMARY KEY  (`id`),
   KEY `pid` (`pid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
@@ -2186,66 +1940,34 @@ CREATE TABLE `history_data` (
 --
 
 DROP TABLE IF EXISTS `icd9_dx_code`;
-CREATE TABLE `icd9_dx_code` (
-  `dx_id` SERIAL,
-  `dx_code`             varchar(5),
-  `formatted_dx_code`   varchar(6),
-  `short_desc`          varchar(60),
-  `long_desc`           varchar(300),
-  `active` tinyint default 0,
-  `revision` int default 0,
-  KEY `dx_code` (`dx_code`),
-  KEY `formatted_dx_code` (`formatted_dx_code`),
-  KEY `active` (`active`)
-) ENGINE=InnoDB;
 
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `icd9_sg_code`
 --
 
 DROP TABLE IF EXISTS `icd9_sg_code`;
-CREATE TABLE `icd9_sg_code` (
-  `sg_id` SERIAL,
-  `sg_code`             varchar(5),
-  `formatted_sg_code`   varchar(6),
-  `short_desc`          varchar(60),
-  `long_desc`           varchar(300),
-  `active` tinyint default 0,
-  `revision` int default 0,
-  KEY `sg_code` (`sg_code`),
-  KEY `formatted_sg_code` (`formatted_sg_code`),
-  KEY `active` (`active`)
-) ENGINE=InnoDB;
 
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `icd9_dx_long_code`
 --
 
 DROP TABLE IF EXISTS `icd9_dx_long_code`;
-CREATE TABLE `icd9_dx_long_code` (
-  `dx_id` SERIAL,
-  `dx_code`             varchar(5),
-  `long_desc`           varchar(300),
-  `active` tinyint default 0,
-  `revision` int default 0
-) ENGINE=InnoDB;
 
+
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `icd9_sg_long_code`
 --
 
 DROP TABLE IF EXISTS `icd9_sg_long_code`;
-CREATE TABLE `icd9_sg_long_code` (
-  `sq_id` SERIAL,
-  `sg_code`             varchar(5),
-  `long_desc`           varchar(300),
-  `active` tinyint default 0,
-  `revision` int default 0
-) ENGINE=InnoDB;
 
+
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `icd10_dx_order_code`
@@ -2384,9 +2106,9 @@ CREATE TABLE `icd10_reimbr_pcs_9_10` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `immunizations`
--- 
+--
 
 DROP TABLE IF EXISTS `immunizations`;
 CREATE TABLE `immunizations` (
@@ -2400,18 +2122,18 @@ CREATE TABLE `immunizations` (
   `administered_by_id` bigint(20) default NULL,
   `administered_by` VARCHAR( 255 ) default NULL COMMENT 'Alternative to administered_by_id',
   `education_date` date default NULL,
-  `vis_date` date default NULL COMMENT 'Date of VIS Statement', 
+  `vis_date` date default NULL COMMENT 'Date of VIS Statement',
   `note` text,
   `create_date` datetime default NULL,
   `update_date` timestamp NOT NULL,
   `created_by` bigint(20) default NULL,
   `updated_by` bigint(20) default NULL,
-  `amount_administered` float DEFAULT NULL,         
-  `amount_administered_unit` varchar(50) DEFAULT NULL,          
-  `expiration_date` date DEFAULT NULL,          
-  `route` varchar(100) DEFAULT NULL,            
-  `administration_site` varchar(100) DEFAULT NULL,          
-  `added_erroneously` tinyint(1) NOT NULL DEFAULT '0',  
+  `amount_administered` float DEFAULT NULL,
+  `amount_administered_unit` varchar(50) DEFAULT NULL,
+  `expiration_date` date DEFAULT NULL,
+  `route` varchar(100) DEFAULT NULL,
+  `administration_site` varchar(100) DEFAULT NULL,
+  `added_erroneously` tinyint(1) NOT NULL DEFAULT '0',
   `external_id` VARCHAR(20) DEFAULT NULL,
   `completion_status` VARCHAR(50) DEFAULT NULL,
   `information_source` VARCHAR(31) DEFAULT NULL,
@@ -2422,9 +2144,9 @@ CREATE TABLE `immunizations` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `insurance_companies`
--- 
+--
 
 DROP TABLE IF EXISTS `insurance_companies`;
 CREATE TABLE `insurance_companies` (
@@ -2436,13 +2158,15 @@ CREATE TABLE `insurance_companies` (
   `x12_receiver_id` varchar(25) default NULL,
   `x12_default_partner_id` int(11) default NULL,
   `alt_cms_id` varchar(15) NOT NULL DEFAULT '',
+  `ins_inactive` tinyint(1) NOT NULL DEFAULT '0',
+  `allow_print_statement` tinyint(1) NOT NULL DEFAULT '0' COMMENT ' 1 = Yes Print Statements',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `insurance_data`
--- 
+--
 
 DROP TABLE IF EXISTS `insurance_data`;
 CREATE TABLE `insurance_data` (
@@ -2484,9 +2208,9 @@ CREATE TABLE `insurance_data` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `insurance_numbers`
--- 
+--
 
 DROP TABLE IF EXISTS `insurance_numbers`;
 CREATE TABLE `insurance_numbers` (
@@ -2502,9 +2226,9 @@ CREATE TABLE `insurance_numbers` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `issue_encounter`
--- 
+--
 
 DROP TABLE IF EXISTS `issue_encounter`;
 CREATE TABLE `issue_encounter` (
@@ -2551,9 +2275,9 @@ INSERT INTO issue_types(`ordering`,`category`,`type`,`plural`,`singular`,`abbrev
 INSERT INTO issue_types(`ordering`,`category`,`type`,`plural`,`singular`,`abbreviation`,`style`,`force_show`) VALUES ('60','ippf_specific','contraceptive','Contraception','Contraception','C','4','0');
 
 
--- 
+--
 -- Table structure for table `lang_constants`
--- 
+--
 
 DROP TABLE IF EXISTS `lang_constants`;
 CREATE TABLE `lang_constants` (
@@ -2563,9 +2287,9 @@ CREATE TABLE `lang_constants` (
   KEY `constant_name` (`constant_name`(100))
 ) ENGINE=InnoDB ;
 
--- 
+--
 -- Table structure for table `lang_definitions`
--- 
+--
 
 DROP TABLE IF EXISTS `lang_definitions`;
 CREATE TABLE `lang_definitions` (
@@ -2577,9 +2301,9 @@ CREATE TABLE `lang_definitions` (
   KEY `cons_id` (`cons_id`)
 ) ENGINE=InnoDB ;
 
--- 
+--
 -- Table structure for table `lang_languages`
--- 
+--
 
 DROP TABLE IF EXISTS `lang_languages`;
 CREATE TABLE `lang_languages` (
@@ -2590,9 +2314,9 @@ CREATE TABLE `lang_languages` (
   UNIQUE KEY `lang_id` (`lang_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 ;
 
--- 
+--
 -- Dumping data for table `lang_languages`
--- 
+--
 
 INSERT INTO `lang_languages` VALUES (1, 'en', 'English', 0);
 
@@ -2610,9 +2334,9 @@ CREATE TABLE `lang_custom` (
 ) ENGINE=InnoDB ;
 
 
--- 
+--
 -- Table structure for table `layout_options`
--- 
+--
 
 DROP TABLE IF EXISTS `layout_options`;
 CREATE TABLE `layout_options` (
@@ -2638,9 +2362,9 @@ CREATE TABLE `layout_options` (
   PRIMARY KEY  (`form_id`,`field_id`,`seq`)
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Loading table `layout_options`.  Demographics section first.
--- 
+--
 
 INSERT INTO `layout_options` (`form_id`, `field_id`, `group_name`, `title`, `seq`, `data_type`, `uor`, `fld_length`, `max_length`, `list_id`, `titlecols`, `datacols`, `default_value`, `edit_options`, `description`, `fld_rows`, `list_backup_id`, `source`, `conditions`) VALUES
 ('DEM', 'fname', '1Face Sheet', 'NAME',5,2,2,10,63, '',1,1, '', 'CD', 'First Name',0, '', 'F', ''),
@@ -2648,6 +2372,7 @@ INSERT INTO `layout_options` (`form_id`, `field_id`, `group_name`, `title`, `seq
 ('DEM', 'lname', '1Face Sheet', '',15,2,2,10,63, '',0,0, '', 'CD', 'Last Name',0, '', 'F', ''),
 ('DEM', 'sex', '1Face Sheet', 'Sex',20,1,2,0,0, 'sex',1,1, '', 'N', 'Sex',0, '', 'F', ''),
 ('DEM', 'DOB', '1Face Sheet', 'DOB',25,4,2,0,10, '',1,1, '', 'D', 'Date of Birth',0, '', 'F', ''),
+('DEM', 'facility', '1Face Sheet', 'Facility', 32, 35, 1, 0, 0, '', 1, 1, '', '', '', 0, '', 'F', ''),
 ('DEM', 'status', '1Face Sheet', 'Marital Status',30,1,1,0,0, 'marital',1,3, '', '', 'Marital Status',0, '', 'F', ''),
 ('DEM', 'street', '1Face Sheet', 'Address',35,2,1,25,63, '',1,1, '', 'C', 'Street and Number',0, '', 'F', ''),
 ('DEM', 'city', '1Face Sheet', 'City',40,2,1,15,63, '',1,1, '', 'C', 'City Name',0, '', 'F', ''),
@@ -2686,6 +2411,7 @@ INSERT INTO `layout_options` (`form_id`, `field_id`, `group_name`, `title`, `seq
 ('DEM', 'vfc', '2Privacy', 'VFC',55,1,1,20,0, 'eligibility',1,1, '', '', 'Eligibility status for Vaccine for Children supplied vaccine',0, '', 'F', NULL),
 ('DEM', 'deceased_date', '2Privacy', 'Date Deceased',60,4,1,0,20, '',1,1, '', 'D', 'If person is deceased then enter date of death.',0, '', 'F', ''),
 ('DEM', 'deceased_reason', '2Privacy', 'Reason Deceased',65,2,1,30,255, '',1,1, '', '', 'Reason for Death',0, '', 'F', ''),
+('DEM', 'statement_y_n', '2Privacy', 'Print Statement',70,1,1,5,0, 'yesno',1,3, '', '', 'Do Not Print a Patient Statement If NO',0, '', 'F', ''),
 ('DEM', 'industry', '4Employer', 'Industry',5,26,1,0,0, 'Industry',1,1, '', '', 'Industry',0, '', 'F', ''),
 ('DEM', 'occupation', '4Employer', 'Occupation',10,26,1,0,0, 'Occupation',1,1, '', '', 'Occupation',0, '', 'F', ''),
 ('DEM', 'em_name', '4Employer', 'Employer Name',15,2,1,20,63, '',1,1, '', 'C', 'Employer Name',0, '', 'F', ''),
@@ -2728,7 +2454,7 @@ INSERT INTO `layout_options` (`form_id`,`field_id`,`group_name`,`title`,`seq`,`d
 ('LBTphreq','body','1','Details',10,3,2,30,0,'',1,3,'','','Content',5),
 ('LBTlegal','body','1','Details',10,3,2,30,0,'',1,3,'','','Content',5),
 ('LBTbill' ,'body','1','Details',10,3,2,30,0,'',1,3,'','','Content',5),
-('HIS','usertext11'       ,'1General'       ,'Risk Factors',1,21,1,0,0,'riskfactors',1,1,'','' ,'Risk Factors', 0),
+('HIS','risk_factors'       ,'1General'       ,'Risk Factors',1,21,1,0,0,'riskfactors',1,1,'','' ,'Risk Factors', 0),
 ('HIS','exams'            ,'1General'       ,'Exams/Tests' ,2,23,1,0,0,'exams'      ,1,1,'','' ,'Exam and test results', 0),
 ('HIS','history_father'   ,'2Family History','Father'                 , 1, 2,1,20,  0,'',1,1,'','' ,'', 0),
 ('HIS','dc_father'        ,'2Family History','Diagnosis Code'         , 2,15,1, 0,255,'',1,1,'','', '', 0),
@@ -2768,9 +2494,9 @@ INSERT INTO `layout_options` (`form_id`,`field_id`,`group_name`,`title`,`seq`,`d
 ('FACUSR', 'provider_id', '1General', 'Provider ID', 1, 2, 1, 15, 63, '', 1, 1, '', '', 'Provider ID at Specified Facility', 0);
 
 
--- 
+--
 -- Table structure for table `list_options`
--- 
+--
 
 DROP TABLE IF EXISTS `list_options`;
 CREATE TABLE `list_options` (
@@ -2790,9 +2516,9 @@ CREATE TABLE `list_options` (
   PRIMARY KEY  (`list_id`,`option_id`)
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Dumping data for table `list_options`
--- 
+--
 
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('yesno', 'NO', 'NO', 1, 0, 'N');
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('yesno', 'YES', 'YES', 2, 0, 'Y');
@@ -3233,13 +2959,7 @@ INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES (
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'taxrate'      ,'Tax Rate'           ,19,0);
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'titles'       ,'Titles'             ,20,0);
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'yesno'        ,'Yes/No'             ,21,0);
-INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'userlist1'    ,'User Defined List 1',22,0);
-INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'userlist2'    ,'User Defined List 2',23,0);
-INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'userlist3'    ,'User Defined List 3',24,0);
-INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'userlist4'    ,'User Defined List 4',25,0);
-INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'userlist5'    ,'User Defined List 5',26,0);
-INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'userlist6'    ,'User Defined List 6',27,0);
-INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists' ,'userlist7'    ,'User Defined List 7',28,0);
+
 
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists'    ,'adjreason'      ,'Adjustment Reasons',1,0);
 INSERT INTO list_options ( list_id, option_id, title, seq, option_value ) VALUES ('adjreason','Adm adjust'     ,'Adm adjust'     , 5,1);
@@ -3347,9 +3067,10 @@ INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) V
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes, toggle_setting_2 ) VALUES ('apptstat','>'       ,'> Checked out'       ,55,0,'FEFDCF|0','1');
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('apptstat','$'       ,'$ Coding done'       ,60,0,'C0FF96|0');
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('apptstat','%'       ,'% Canceled < 24h'    ,65,0,'BFBFBF|0');
-INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('apptstat','^'       ,'^ Pending'    ,70,0,'ADBBFF|0');
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('apptstat','^'       ,'^ Pending from Portal'    ,70,0,'ADBBFF|0');
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('apptstat','='       ,'= Rescheduled'    ,75,0,'BFBFBF|0');
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('apptstat','&'       ,'& Rescheduled < 24h'    ,80,0,'BFBFBF|0');
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default, notes ) VALUES ('apptstat','Deleted' ,'Deleted'    ,85,0,'0F0F0F|0');
 
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists'    ,'warehouse','Warehouses',21,0);
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('warehouse','onsite'   ,'On Site'   , 5,0);
@@ -4018,9 +3739,7 @@ insert into list_options (list_id, option_id, title, seq, option_value, mapping,
 insert into list_options (list_id, option_id, title, seq, option_value, mapping, notes) values('ptlistcols','lname'     ,'Last Name'     ,'10','3','','');
 insert into list_options (list_id, option_id, title, seq, option_value, mapping, notes) values('ptlistcols','fname'     ,'First Name'    ,'20','3','','');
 insert into list_options (list_id, option_id, title, seq, option_value, mapping, notes) values('ptlistcols','phone_home','Home Phone'    ,'30','3','','');
-insert into list_options (list_id, option_id, title, seq, option_value, mapping, notes) values('ptlistcols','ss'        ,'SSN'           ,'40','3','','');
 insert into list_options (list_id, option_id, title, seq, option_value, mapping, notes) values('ptlistcols','DOB'       ,'Date of Birth' ,'50','3','','');
-insert into list_options (list_id, option_id, title, seq, option_value, mapping, notes) values('ptlistcols','pubpid'    ,'External ID'   ,'60','3','','');
 insert into list_options (list_id, option_id, title, seq, option_value, mapping, notes) values('ptlistcols','pid'       ,'Patient ID'    ,'70','3','','');
 
 -- Medical Problem Issue List
@@ -4081,7 +3800,7 @@ INSERT INTO `list_options` (`list_id`, `option_id`, `title`, `seq`) VALUES ('ins
 INSERT INTO list_options(list_id,option_id,title) VALUES ('lists' ,'amendment_status','Amendment Status');
 INSERT INTO list_options(list_id,option_id,title,seq) VALUES ('amendment_status' ,'approved','Approved', 10);
 INSERT INTO list_options(list_id,option_id,title,seq) VALUES ('amendment_status' ,'rejected','Rejected', 20);
-    
+
 -- Amendment request from
 INSERT INTO list_options(list_id,option_id,title) VALUES ('lists' ,'amendment_from','Amendment From');
 INSERT INTO list_options(list_id,option_id,title,seq) VALUES ('amendment_from' ,'patient','Patient', 10);
@@ -4102,7 +3821,7 @@ INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religio
 INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religious_affiliation','anglican','1005','Anglican','45');
 INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religious_affiliation','animism','1006','Animism','55');
 INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religious_affiliation','assembly_of_god','1061','Assembly of God','65');
-INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religious_affiliation','atheism','1007','Atheism','75');
+INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religious_affiliation','atheist','1007','NONE (non-theist, atheist)','75');
 INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religious_affiliation','babi_bahai_faiths','1008','Babi & Baha\'I faiths','85');
 INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religious_affiliation','baptist','1009','Baptist','95');
 INSERT INTO list_options (list_id, option_id, notes,title, seq) VALUES ('religious_affiliation','bon','1010','Bon','105');
@@ -4368,9 +4087,38 @@ INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES (
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('provider_qualifier_code','dn','DN',20,0);
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('provider_qualifier_code','dq','DQ',30,0);
 
--- 
+-- ub_admit_source
+
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists','ub_admit_source','UB Admit Source', 1,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','1','Physician Referral',5,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','2','Clinic Referral',10,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','3','HMO Referral',20,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','4','Transfer from Hospital',25,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','5','Transfer from SNF',30,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','6','Transfer From Another Health Care Facility',35,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','7','Emergency Room',40,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','8','Court/Law Enforcement',45,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_source','9','Information Not Available',50,0);
+
+-- ub_admit_type
+
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('lists','ub_admit_type','UB Admit Type', 1,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_type','1','Emergency',10,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_type','2','Urgent',20,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_type','3','Elective',30,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_type','4','Newborn',40,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_type','5','Trauma',50,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('ub_admit_type','9','Information Not Available',60,0);
+
+-- Appointment Cancellation Reasons
+INSERT INTO list_options ( list_id, option_id, title,activity ) VALUES ('lists','cancellation_reasons','Cancellation Reasons', 1);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('cancellation_reasons','1','No reason given',5,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('cancellation_reasons','2','Work',10,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('cancellation_reasons','3','Sick',20,0);
+INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('cancellation_reasons','4','Weather',25,0);
+--
 -- Table structure for table `lists`
--- 
+--
 
 DROP TABLE IF EXISTS `lists`;
 CREATE TABLE `lists` (
@@ -4424,9 +4172,9 @@ CREATE TABLE `lists_touch` (
 ) ENGINE=InnoDB ;
 
 
--- 
+--
 -- Table structure for table `log`
--- 
+--
 
 DROP TABLE IF EXISTS `log`;
 CREATE TABLE `log` (
@@ -4554,9 +4302,9 @@ CREATE TABLE `modules_settings` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `notes`
--- 
+--
 
 DROP TABLE IF EXISTS `notes`;
 CREATE TABLE `notes` (
@@ -4573,92 +4321,150 @@ CREATE TABLE `notes` (
 ) ENGINE=InnoDB;
 
 
--- 
--- Table structure for table `onotes`
--- 
 
-DROP TABLE IF EXISTS `onotes`;
-CREATE TABLE `onotes` (
-  `id` bigint(20) NOT NULL auto_increment,
-  `date` datetime default NULL,
-  `body` longtext,
-  `user` varchar(255) default NULL,
-  `groupname` varchar(255) default NULL,
-  `activity` tinyint(4) default NULL,
-  PRIMARY KEY  (`id`)
+--
+-- Table structure for table `onsite_documents`
+--
+
+DROP TABLE IF EXISTS `onsite_documents`;
+CREATE TABLE `onsite_documents` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pid` int(10) UNSIGNED DEFAULT NULL,
+  `facility` int(10) UNSIGNED DEFAULT NULL,
+  `provider` int(10) UNSIGNED DEFAULT NULL,
+  `encounter` int(10) UNSIGNED DEFAULT NULL,
+  `create_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `doc_type` varchar(255) NOT NULL,
+  `patient_signed_status` smallint(5) UNSIGNED NOT NULL,
+  `patient_signed_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `authorize_signed_time` datetime DEFAULT NULL,
+  `accept_signed_status` smallint(5) NOT NULL,
+  `authorizing_signator` varchar(50) NOT NULL,
+  `review_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `denial_reason` varchar(255) NOT NULL,
+  `authorized_signature` text,
+  `patient_signature` text,
+  `full_document` blob,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
+--
+-- Table structure for table `onsite_mail`
+--
 
--- 
--- Table structure for table `libreehr_module_vars`
--- 
+DROP TABLE IF EXISTS `onsite_mail`;
+CREATE TABLE `onsite_mail` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `date` datetime DEFAULT NULL,
+  `owner` bigint(20) DEFAULT NULL,
+  `user` varchar(255) DEFAULT NULL,
+  `groupname` varchar(255) DEFAULT NULL,
+  `activity` tinyint(4) DEFAULT NULL,
+  `authorized` tinyint(4) DEFAULT NULL,
+  `header` varchar(255) DEFAULT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `body` longtext,
+  `recipient_id` varchar(128) DEFAULT NULL,
+  `recipient_name` varchar(255) DEFAULT NULL,
+  `sender_id` varchar(128) DEFAULT NULL,
+  `sender_name` varchar(255) DEFAULT NULL,
+  `assigned_to` varchar(255) DEFAULT NULL,
+  `deleted` tinyint(4) DEFAULT '0' COMMENT 'flag indicates note is deleted',
+  `delete_date` datetime DEFAULT NULL,
+  `mtype` varchar(128) DEFAULT NULL,
+  `message_status` varchar(20) NOT NULL DEFAULT 'New',
+  `mail_chain` int(11) DEFAULT NULL,
+  `reply_mail_chain` int(11) DEFAULT NULL,
+  `is_msg_encrypted` tinyint(2) DEFAULT '0' COMMENT 'Whether messsage encrypted 0-Not encrypted, 1-Encrypted',
+  PRIMARY KEY (`id`),
+  KEY `pid` (`owner`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
-DROP TABLE IF EXISTS `libreehr_module_vars`;
-CREATE TABLE `libreehr_module_vars` (
-  `pn_id` int(11) unsigned NOT NULL auto_increment,
-  `pn_modname` varchar(64) default NULL,
-  `pn_name` varchar(64) default NULL,
-  `pn_value` longtext,
-  PRIMARY KEY  (`pn_id`),
-  KEY `pn_modname` (`pn_modname`),
-  KEY `pn_name` (`pn_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=235 ;
+--
+-- Table structure for table `onsite_messages`
+--
 
--- 
--- Dumping data for table `libreehr_module_vars`
--- 
+DROP TABLE IF EXISTS `onsite_messages`;
+CREATE TABLE `onsite_messages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(64) NOT NULL,
+  `message` longtext,
+  `ip` varchar(15) NOT NULL,
+  `date` datetime NOT NULL,
+  `sender_id` int(11) UNSIGNED NOT NULL DEFAULT '0' COMMENT 'who sent id',
+  `recip_id` varchar(255) NOT NULL COMMENT 'who to id array',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB COMMENT='Portal messages' AUTO_INCREMENT=1 ;
 
-INSERT INTO `libreehr_module_vars` VALUES (234, 'PostCalendar', 'pcNotifyEmail', '');
-INSERT INTO `libreehr_module_vars` VALUES (233, 'PostCalendar', 'pcNotifyAdmin', '0');
-INSERT INTO `libreehr_module_vars` VALUES (232, 'PostCalendar', 'pcCacheLifetime', '3600');
-INSERT INTO `libreehr_module_vars` VALUES (231, 'PostCalendar', 'pcUseCache', '0');
-INSERT INTO `libreehr_module_vars` VALUES (230, 'PostCalendar', 'pcDefaultView', 'day');
-INSERT INTO `libreehr_module_vars` VALUES (229, 'PostCalendar', 'pcTimeIncrement', '5');
-INSERT INTO `libreehr_module_vars` VALUES (228, 'PostCalendar', 'pcAllowUserCalendar', '1');
-INSERT INTO `libreehr_module_vars` VALUES (227, 'PostCalendar', 'pcAllowSiteWide', '1');
-INSERT INTO `libreehr_module_vars` VALUES (226, 'PostCalendar', 'pcTemplate', 'default');
-INSERT INTO `libreehr_module_vars` VALUES (225, 'PostCalendar', 'pcEventDateFormat', '%Y-%m-%d');
-INSERT INTO `libreehr_module_vars` VALUES (224, 'PostCalendar', 'pcDisplayTopics', '0');
-INSERT INTO `libreehr_module_vars` VALUES (223, 'PostCalendar', 'pcListHowManyEvents', '15');
-INSERT INTO `libreehr_module_vars` VALUES (222, 'PostCalendar', 'pcAllowDirectSubmit', '1');
-INSERT INTO `libreehr_module_vars` VALUES (221, 'PostCalendar', 'pcUsePopups', '0');
-INSERT INTO `libreehr_module_vars` VALUES (220, 'PostCalendar', 'pcDayHighlightColor', '#EEEEEE');
-INSERT INTO `libreehr_module_vars` VALUES (219, 'PostCalendar', 'pcFirstDayOfWeek', '1');
-INSERT INTO `libreehr_module_vars` VALUES (218, 'PostCalendar', 'pcUseInternationalDates', '0');
-INSERT INTO `libreehr_module_vars` VALUES (217, 'PostCalendar', 'pcEventsOpenInNewWindow', '0');
-INSERT INTO `libreehr_module_vars` VALUES (216, 'PostCalendar', 'pcTime24Hours', '0');
+--
+-- Table structure for table `onsite_online`
+--
 
+DROP TABLE IF EXISTS `onsite_online`;
+CREATE TABLE `onsite_online` (
+  `hash` varchar(32) NOT NULL,
+  `ip` varchar(15) NOT NULL,
+  `last_update` datetime NOT NULL,
+  `username` varchar(64) NOT NULL,
+  `userid` int(11) UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`hash`)
+) ENGINE=InnoDB;
 
--- 
--- Table structure for table `libreehr_modules`
--- 
+--
+-- Table structure for table `onsite_portal_activity`
+--
 
-DROP TABLE IF EXISTS `libreehr_modules`;
-CREATE TABLE `libreehr_modules` (
-  `pn_id` int(11) unsigned NOT NULL auto_increment,
-  `pn_name` varchar(64) default NULL,
-  `pn_type` int(6) NOT NULL default '0',
-  `pn_displayname` varchar(64) default NULL,
-  `pn_description` varchar(255) default NULL,
-  `pn_regid` int(11) unsigned NOT NULL default '0',
-  `pn_directory` varchar(64) default NULL,
-  `pn_version` varchar(10) default NULL,
-  `pn_admin_capable` tinyint(1) NOT NULL default '0',
-  `pn_user_capable` tinyint(1) NOT NULL default '0',
-  `pn_state` tinyint(1) NOT NULL default '0',
-  PRIMARY KEY  (`pn_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=47 ;
+DROP TABLE IF EXISTS `onsite_portal_activity`;
+CREATE TABLE `onsite_portal_activity` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `date` datetime DEFAULT NULL,
+  `patient_id` bigint(20) DEFAULT NULL,
+  `activity` varchar(255) DEFAULT NULL,
+  `require_audit` tinyint(1) DEFAULT '1',
+  `pending_action` varchar(255) DEFAULT NULL,
+  `action_taken` varchar(255) DEFAULT NULL,
+  `status` varchar(255) DEFAULT NULL,
+  `narrative` longtext,
+  `table_action` longtext,
+  `table_args` longtext,
+  `action_user` int(11) DEFAULT NULL,
+  `action_taken_time` datetime DEFAULT NULL,
+  `checksum` longtext,
+  PRIMARY KEY (`id`),
+  KEY `date` (`date`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
--- 
--- Dumping data for table `libreehr_modules`
--- 
+--
+-- Table structure for table `onsite_signatures`
+--
 
-INSERT INTO `libreehr_modules` VALUES (46, 'PostCalendar', 2, 'PostCalendar', 'PostNuke Calendar Module', 0, 'PostCalendar', '4.0.0', 1, 1, 3);
+DROP TABLE IF EXISTS `onsite_signatures`;
+CREATE TABLE `onsite_signatures` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `status` varchar(128) NOT NULL DEFAULT 'waiting',
+  `type` varchar(128) NOT NULL,
+  `created` int(11) NOT NULL,
+  `lastmod` datetime NOT NULL,
+  `pid` bigint(20) DEFAULT NULL,
+  `encounter` int(11) DEFAULT NULL,
+  `user` varchar(255) DEFAULT NULL,
+  `activity` tinyint(4) NOT NULL DEFAULT '0',
+  `authorized` tinyint(4) DEFAULT NULL,
+  `signator` varchar(255) NOT NULL,
+  `sig_image` text,
+  `signature` text,
+  `sig_hash` varchar(128) NOT NULL,
+  `ip` varchar(46) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `pid` (`pid`,`user`),
+  KEY `encounter` (`encounter`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
-
--- 
+--
 -- Table structure for table `libreehr_postcalendar_categories`
--- 
+--
 
 DROP TABLE IF EXISTS `libreehr_postcalendar_categories`;
 CREATE TABLE `libreehr_postcalendar_categories` (
@@ -4683,9 +4489,9 @@ CREATE TABLE `libreehr_postcalendar_categories` (
   KEY `basic_cat` (`pc_catname`,`pc_catcolor`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 ;
 
--- 
+--
 -- Dumping data for table `libreehr_postcalendar_categories`
--- 
+--
 
 INSERT INTO `libreehr_postcalendar_categories` VALUES (1, 'No Show', '#DDDDDD', 'Reserved to define when an event did not occur as specified.', 0, NULL, 'a:5:{s:17:"event_repeat_freq";s:1:"0";s:22:"event_repeat_freq_type";s:1:"0";s:19:"event_repeat_on_num";s:1:"1";s:19:"event_repeat_on_day";s:1:"0";s:20:"event_repeat_on_freq";s:1:"0";}', 0, 0, 0, 0, 0, 0, 0, 0,1,1);
 INSERT INTO `libreehr_postcalendar_categories` VALUES (2, 'In Office', '#99CCFF', 'Reserved todefine when a provider may haveavailable appointments after.', 1, NULL, 'a:5:{s:17:"event_repeat_freq";s:1:"1";s:22:"event_repeat_freq_type";s:1:"4";s:19:"event_repeat_on_num";s:1:"1";s:19:"event_repeat_on_day";s:1:"0";s:20:"event_repeat_on_freq";s:1:"0";}', 0, 0, 1, 3, 2, 0, 0, 1,1,2);
@@ -4704,9 +4510,9 @@ INSERT INTO `libreehr_postcalendar_categories` VALUES (13, 'Preventive Care Serv
 INSERT INTO `libreehr_postcalendar_categories` VALUES (14, 'Ophthalmological Services', '#F89219', 'Ophthalmological Services', 0, NULL, 'a:5:{s:17:"event_repeat_freq";s:1:"0";s:22:"event_repeat_freq_type";s:1:"0";s:19:"event_repeat_on_num";s:1:"1";s:19:"event_repeat_on_day";s:1:"0";s:20:"event_repeat_on_freq";s:1:"0";}', 0, 900, 0, 0, 0, 0, 0,0,1,14);
 
 
--- 
+--
 -- Table structure for table `libreehr_postcalendar_events`
--- 
+--
 
 DROP TABLE IF EXISTS `libreehr_postcalendar_events`;
 CREATE TABLE `libreehr_postcalendar_events` (
@@ -4747,45 +4553,16 @@ CREATE TABLE `libreehr_postcalendar_events` (
   `pc_sendalertemail` VARCHAR( 3 ) NOT NULL DEFAULT 'NO',
   `pc_billing_location` SMALLINT (6) NOT NULL DEFAULT '0',
   `pc_room` varchar(20) NOT NULL DEFAULT '',
+  `cancel_reason` text,
   PRIMARY KEY  (`pc_eid`),
   KEY `basic_event` (`pc_catid`,`pc_aid`,`pc_eventDate`,`pc_endDate`,`pc_eventstatus`,`pc_sharing`,`pc_topic`),
   KEY `pc_eventDate` (`pc_eventDate`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 ;
 
 
--- 
--- Table structure for table `libreehr_postcalendar_limits`
--- 
-
-DROP TABLE IF EXISTS `libreehr_postcalendar_limits`;
-CREATE TABLE `libreehr_postcalendar_limits` (
-  `pc_limitid` int(11) NOT NULL auto_increment,
-  `pc_catid` int(11) NOT NULL default '0',
-  `pc_starttime` time NOT NULL default '00:00:00',
-  `pc_endtime` time NOT NULL default '00:00:00',
-  `pc_limit` int(11) NOT NULL default '1',
-  PRIMARY KEY  (`pc_limitid`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 ;
-
-
--- 
--- Table structure for table `libreehr_postcalendar_topics`
--- 
-
-DROP TABLE IF EXISTS `libreehr_postcalendar_topics`;
-CREATE TABLE `libreehr_postcalendar_topics` (
-  `pc_catid` int(11) unsigned NOT NULL auto_increment,
-  `pc_catname` varchar(100) default NULL,
-  `pc_catcolor` varchar(50) default NULL,
-  `pc_catdesc` text,
-  PRIMARY KEY  (`pc_catid`),
-  KEY `basic_cat` (`pc_catname`,`pc_catcolor`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 ;
-
-
--- 
+--
 -- Table structure for table `libreehr_session_info`
--- 
+--
 
 DROP TABLE IF EXISTS `libreehr_session_info`;
 CREATE TABLE `libreehr_session_info` (
@@ -4815,9 +4592,9 @@ CREATE TABLE `patient_access_onsite`(
 )ENGINE=InnoDB AUTO_INCREMENT=1;
 
 
--- 
+--
 -- Table structure for table `patient_data`
--- 
+--
 
 DROP TABLE IF EXISTS `patient_data`;
 CREATE TABLE `patient_data` (
@@ -4829,6 +4606,7 @@ CREATE TABLE `patient_data` (
   `lname` varchar(255) NOT NULL default '',
   `mname` varchar(255) NOT NULL default '',
   `DOB` date default NULL,
+  `facility` int(11) default NULL,
   `street` varchar(255) NOT NULL default '',
   `postal_code` varchar(255) NOT NULL default '',
   `city` varchar(255) NOT NULL default '',
@@ -4878,21 +4656,6 @@ CREATE TABLE `patient_data` (
   `squad` varchar(32) NOT NULL default '',
   `fitness` int(11) NOT NULL default '0',
   `referral_source` varchar(30) NOT NULL default '',
-  `usertext1` varchar(255) NOT NULL DEFAULT '',
-  `usertext2` varchar(255) NOT NULL DEFAULT '',
-  `usertext3` varchar(255) NOT NULL DEFAULT '',
-  `usertext4` varchar(255) NOT NULL DEFAULT '',
-  `usertext5` varchar(255) NOT NULL DEFAULT '',
-  `usertext6` varchar(255) NOT NULL DEFAULT '',
-  `usertext7` varchar(255) NOT NULL DEFAULT '',
-  `usertext8` varchar(255) NOT NULL DEFAULT '',
-  `userlist1` varchar(255) NOT NULL DEFAULT '',
-  `userlist2` varchar(255) NOT NULL DEFAULT '',
-  `userlist3` varchar(255) NOT NULL DEFAULT '',
-  `userlist4` varchar(255) NOT NULL DEFAULT '',
-  `userlist5` varchar(255) NOT NULL DEFAULT '',
-  `userlist6` varchar(255) NOT NULL DEFAULT '',
-  `userlist7` varchar(255) NOT NULL DEFAULT '',
   `pricelevel` varchar(255) NOT NULL default 'standard',
   `regdate`     date DEFAULT NULL COMMENT 'Registration Date',
   `contrastart` date DEFAULT NULL COMMENT 'Date contraceptives initially used',
@@ -4910,7 +4673,9 @@ CREATE TABLE `patient_data` (
   `soap_import_status` TINYINT(4) DEFAULT NULL COMMENT '1-Prescription Press 2-Prescription Import 3-Allergy Press 4-Allergy Import',
   `care_team` int(11) DEFAULT NULL,
   `county` varchar(40) NOT NULL default '',
+  `statement_y_n` TEXT,
   `industry` TEXT,
+  `picture_url` varchar(2000) NOT NULL default '',
   UNIQUE KEY `pid` (`pid`),
   KEY `id` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
@@ -4941,9 +4706,9 @@ CREATE TABLE `patient_reminders` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1;
 
 
--- 
+--
 -- Table structure for table `patient_tracker`
--- 
+--
 
 DROP TABLE IF EXISTS `patient_tracker`;
 CREATE TABLE IF NOT EXISTS `patient_tracker` (
@@ -4963,9 +4728,9 @@ CREATE TABLE IF NOT EXISTS `patient_tracker` (
   KEY (`pid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1;
 
--- 
+--
 -- Table structure for table `patient_tracker_element`
--- 
+--
 
 DROP TABLE IF EXISTS `patient_tracker_element`;
 CREATE TABLE IF NOT EXISTS `patient_tracker_element` (
@@ -4975,12 +4740,13 @@ CREATE TABLE IF NOT EXISTS `patient_tracker_element` (
   `status`             varchar(31)  NOT NULL default '',
   `seq`                varchar(4)   NOT NULL default '' COMMENT 'This is a numerical sequence for this pt_tracker_id events',
   `user`               varchar(255) NOT NULL default '' COMMENT 'This is the user that created this element',
+  `reason`             varchar(255)  NOT NULL default '',
   KEY  (`pt_tracker_id`,`seq`)
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Table structure for table `payments`
--- 
+--
 
 DROP TABLE IF EXISTS `payments`;
 CREATE TABLE `payments` (
@@ -5014,9 +4780,9 @@ CREATE TABLE `payment_gateway_details` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `pharmacies`
--- 
+--
 
 DROP TABLE IF EXISTS `pharmacies`;
 CREATE TABLE `pharmacies` (
@@ -5028,9 +4794,9 @@ CREATE TABLE `pharmacies` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `phone_numbers`
--- 
+--
 
 DROP TABLE IF EXISTS `phone_numbers`;
 CREATE TABLE `phone_numbers` (
@@ -5048,7 +4814,7 @@ CREATE TABLE `phone_numbers` (
 
 --
 -- Table structure for table `pnotes`
--- 
+--
 
 DROP TABLE IF EXISTS `pnotes`;
 CREATE TABLE `pnotes` (
@@ -5071,9 +4837,9 @@ CREATE TABLE `pnotes` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `prescriptions`
--- 
+--
 
 DROP TABLE IF EXISTS `prescriptions`;
 CREATE TABLE `prescriptions` (
@@ -5119,9 +4885,9 @@ CREATE TABLE `prescriptions` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `prices`
--- 
+--
 
 DROP TABLE IF EXISTS `prices`;
 CREATE TABLE `prices` (
@@ -5133,9 +4899,9 @@ CREATE TABLE `prices` (
 ) ENGINE=InnoDB;
 
 
--- 
+--
 -- Table structure for table `registry`
--- 
+--
 
 DROP TABLE IF EXISTS `registry`;
 CREATE TABLE `registry` (
@@ -5152,9 +4918,9 @@ CREATE TABLE `registry` (
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 ;
 
--- 
+--
 -- Dumping data for table `registry`
--- 
+--
 
 INSERT INTO `registry` VALUES ('New Encounter Form', 1, 'patient_encounter', 1, 1, 1, '2003-09-14 15:16:45', 0, 'Administrative', '');
 INSERT INTO `registry` VALUES ('Review of Systems Checks', 1, 'reviewofs', 9, 1, 1, '2003-09-14 15:16:45', 0, 'Clinical', '');
@@ -5178,11 +4944,12 @@ CREATE TABLE `report_itemized` (
   `report_id` bigint(20) NOT NULL,
   `itemized_test_id` smallint(6) NOT NULL,
   `numerator_label` varchar(25) NOT NULL DEFAULT '' COMMENT 'Only used in special cases',
-  `pass` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 is fail, 1 is pass, 2 is excluded',
+  `pass` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0 is fail, 1 is pass, 2 is excluded,9 is off',
   `pid` bigint(20) NOT NULL,
   KEY (`report_id`,`itemized_test_id`,`numerator_label`,`pass`)
 ) ENGINE=InnoDB;
 
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `report_results`
@@ -5192,7 +4959,7 @@ DROP TABLE IF EXISTS `report_results`;
 CREATE TABLE `report_results` (
   `report_id` bigint(20) NOT NULL,
   `field_id` varchar(31) NOT NULL default '',
-  `field_value` text,
+  `field_value` longtext,
   PRIMARY KEY (`report_id`,`field_id`)
 ) ENGINE=InnoDB;
 
@@ -5749,9 +5516,9 @@ CREATE TABLE `rule_target` (
   `group_id` bigint(20) NOT NULL DEFAULT 1 COMMENT 'Contains group id to identify collection of targets in a rule',
   `include_flag` tinyint(1) NOT NULL default 0 COMMENT '0 is exclude and 1 is include',
   `required_flag` tinyint(1) NOT NULL default 0 COMMENT '0 is required and 1 is optional',
-  `method` varchar(31) NOT NULL DEFAULT '' COMMENT 'Maps to list_options list rule_targets', 
+  `method` varchar(31) NOT NULL DEFAULT '' COMMENT 'Maps to list_options list rule_targets',
   `value` varchar(255) NOT NULL DEFAULT '' COMMENT 'Data is dependent on the method',
-  `interval` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Only used in interval entries', 
+  `interval` bigint(20) NOT NULL DEFAULT 0 COMMENT 'Only used in interval entries',
   KEY  (`id`)
 ) ENGINE=InnoDB ;
 
@@ -5839,18 +5606,18 @@ INSERT INTO `rule_target` ( `id`, `group_id`, `include_flag`, `required_flag`, `
 INSERT INTO `rule_target` ( `id`, `group_id`, `include_flag`, `required_flag`, `method`, `value`, `interval` ) VALUES ('rule_inr_measure', 1, 1, 1, 'target_proc', 'INR::CPT4:85610::::::ge::1', 0);
 
 
--- 
+--
 -- Table structure for table `sequences`
--- 
+--
 
 DROP TABLE IF EXISTS `sequences`;
 CREATE TABLE `sequences` (
   `id` int(11) unsigned NOT NULL default '0'
 ) ENGINE=InnoDB;
 
--- 
+--
 -- Dumping data for table `sequences`
--- 
+--
 
 INSERT INTO `sequences` VALUES (1);
 
@@ -5913,44 +5680,56 @@ INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_re
 ('ICD10', 'CMS', '2013-10-01', 'DiagnosisGEMs-2014.zip', '3ed7b7c5a11c766102b12d97d777a11b');
 INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2013-10-01', '2014-PCS-long-and-abbreviated-titles.zip', '2d03514a0c66d92cf022a0bc28c83d38');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD9', 'CMS', '2014-10-01', 'ICD-9-CM-v32-master-descriptions.zip', 'b852b85f770c83433201dc8ae2c59074');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2014-10-01', '2015-PCS-long-and-abbreviated-titles.zip', 'd1504d6cbc40e008e52dbc50600a4b66');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2014-10-01', 'DiagnosisGEMs_2015.zip', 'a4505805edf25ba4eacda07f23934e63');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2014-10-01', '2015-code-descriptions.zip', '6a8c0ab630d5afa7482daa417950846a');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2014-10-01', 'ProcedureGEMs_2015.zip', 'fcba4e4c96851f4c900345bc557483e2');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2014-10-01', 'Reimbursement_Mapping_dx_2015.zip', '0990d5bcac13ccf5e288249be5261fd7');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2014-10-01', 'Reimbursement_Mapping_pr_2015.zip', '493c022db17a70fcdcbb41bf0ad61a47');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2015-10-01', '2016-PCS-Long-Abbrev-Titles.zip', 'd5ea519d0257db0ed7deb0406a4d0503');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2015-10-01', '2016-General-Equivalence-Mappings.zip', '3324a45b6040be7e48ab770a0d3ca695');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2015-10-01', '2016-Code-Descriptions-in-Tabular-Order.zip', '518a47fe9e268e4fb72fecf633d15f17');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2015-10-01', '2016-ProcedureGEMs.zip', '45a8d9da18d8aed57f0c6ea91e3e8fe4');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2015-10-01', 'Reimbursement_Mapping_dx_2016.zip', '1b53b512e10c1fdf7ae4cfd1baa8dfbb');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2015-10-01', 'Reimbursement_Mapping_pr_2016.zip', '3c780dd103d116aa57980decfddd4f19');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2016-10-01', '2017-PCS-Long-Abbrev-Titles.zip', '4669c47f6a9ca34bf4c14d7f93b37993');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2016-10-01', '2017-GEM-DC.zip', '5a0affdc77a152e6971781233ee969c1');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2016-10-01', '2017-ICD10-Code-Descriptions.zip', 'ed9c159cb4ac4ae4f145062e15f83291');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES 
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2016-10-01', '2017-GEM-PCS.zip', 'a4e08b08fb9a53c81385867c82aa8a9e');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2017-10-01', '2018-ICD-10-PCS-Order-File.zip', '264b342310236f2b3927062d2c72cfe3');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2017-10-01', '2018-ICD-10-CM-General-Equivalence-Mappings.zip', '787a025fdcf6e1da1a85be779004f670');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2017-10-01', '2018-ICD-10-Code-Descriptions.zip', '6f9c77440132e30f565222ca9bb6599c');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2017-10-01', '2018-ICD-10-PCS-General-Equivalence-Mappings.zip', 'bb73c80e272da28712887d7979b1cebf');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2018-10-01', '2019-ICD-10-CM-Code-Descriptions.zip', 'b23e0128eb2dce0cb007c31638a8dc00');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2018-10-01', '2019-ICD-10-PCS-Order-File.zip', 'eb545fe61ada9efad0ad97a669f8671f');
 
--- 
+--
 -- Table structure for table `transactions`
--- 
+--
 
 DROP TABLE IF EXISTS `transactions`;
 CREATE TABLE `transactions` (
@@ -5966,9 +5745,9 @@ CREATE TABLE `transactions` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- 
+--
 -- Table structure for table `users`
--- 
+--
 
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
@@ -5986,6 +5765,9 @@ CREATE TABLE `users` (
   `upin` varchar(255) default NULL,
   `facility` varchar(255) default NULL,
   `facility_id` int(11) NOT NULL default '0',
+  `fullscreen_page` text NOT NULL,
+  `fullscreen_enable` int(11) NOT NULL default '0',
+  `menu_role` varchar(100) NOT NULL default "Default Role",
   `see_auth` int(11) NOT NULL default '1',
   `active` tinyint(1) NOT NULL default '1',
   `npi` varchar(15) default NULL,
@@ -6028,6 +5810,7 @@ CREATE TABLE `users` (
   `cpoe` tinyint(1) NULL DEFAULT NULL,
   `physician_type` VARCHAR(50) DEFAULT NULL,
   `suffix` varchar(255) DEFAULT NULL,
+  `picture_url` varchar(2000) NOT NULL default '',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
@@ -6094,9 +5877,9 @@ INSERT INTO user_settings ( setting_user, setting_label, setting_value ) VALUES 
 INSERT INTO user_settings ( setting_user, setting_label, setting_value ) VALUES (1, 'gacl_protect', '1');
 
 
--- 
+--
 -- Table structure for table `x12_partners`
--- 
+--
 
 DROP TABLE IF EXISTS `x12_partners`;
 CREATE TABLE `x12_partners` (
@@ -6123,7 +5906,7 @@ CREATE TABLE `x12_partners` (
 
 -- -----------------------------------------------------------------------------------
 -- Table structure for table `automatic_notification`
--- 
+--
 
 DROP TABLE IF EXISTS `automatic_notification`;
 CREATE TABLE `automatic_notification` (
@@ -6140,17 +5923,17 @@ CREATE TABLE `automatic_notification` (
   PRIMARY KEY  (`notification_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 ;
 
--- 
+--
 -- Dumping data for table `automatic_notification`
--- 
+--
 
 INSERT INTO `automatic_notification` (`notification_id`, `sms_gateway_type`, `next_app_date`, `next_app_time`, `provider_name`, `message`, `email_sender`, `email_subject`, `type`, `notification_sent_date`) VALUES (1, 'CLICKATELL', NULL, ':', 'EMR GROUP 1 .. SMS', 'Welcome to EMR GROUP 1.. SMS', '', '', 'SMS', NULL),
 (2, '', '2007-10-02', '05:50', 'EMR GROUP', 'Welcome to EMR GROUP . Email', 'EMR Group', 'Welcome to EMR GROUP', 'Email', '2007-09-30 00:00:00');
 
 
--- 
+--
 -- Table structure for table `notification_log`
--- 
+--
 
 DROP TABLE IF EXISTS `notification_log`;
 CREATE TABLE `notification_log` (
@@ -6173,9 +5956,9 @@ CREATE TABLE `notification_log` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 ;
 
 
--- 
+--
 -- Table structure for table `notification_settings`
--- 
+--
 
 DROP TABLE IF EXISTS `notification_settings`;
 CREATE TABLE `notification_settings` (
@@ -6189,9 +5972,9 @@ CREATE TABLE `notification_settings` (
   PRIMARY KEY  (`SettingsId`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 ;
 
--- 
+--
 -- Dumping data for table `notification_settings`
--- 
+--
 
 INSERT INTO `notification_settings` (`SettingsId`, `Send_SMS_Before_Hours`, `Send_Email_Before_Hours`, `SMS_gateway_username`, `SMS_gateway_password`, `SMS_gateway_apikey`, `type`) VALUES (1, 150, 150, 'sms username', 'sms password', 'sms api key', 'SMS/Email Settings');
 
@@ -6409,7 +6192,7 @@ CREATE TABLE `procedure_report` (
   `source`              bigint(20)     NOT NULL DEFAULT 0  COMMENT 'references users.id, who entered this data',
   `specimen_num`        varchar(63)    NOT NULL DEFAULT '',
   `report_status`       varchar(31)    NOT NULL DEFAULT '' COMMENT 'received,complete,error',
-  `review_status`       varchar(31)    NOT NULL DEFAULT 'received' COMMENT 'pending review status: received,reviewed',  
+  `review_status`       varchar(31)    NOT NULL DEFAULT 'received' COMMENT 'pending review status: received,reviewed',
   `report_notes`        text           COMMENT 'notes from the lab',
   PRIMARY KEY (`procedure_report_id`),
   KEY procedure_order_id (procedure_order_id)
@@ -7433,7 +7216,7 @@ INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES (
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('payment_date', 'post_to_date', 'Post To Date', 20, 0);
 INSERT INTO list_options ( list_id, option_id, title, seq, is_default ) VALUES ('payment_date', 'deposit_date', 'Deposit Date', 30, 0);
 
--- 
+--
 -- Table structure for table `extended_log`
 --
 
@@ -7462,43 +7245,6 @@ CREATE TABLE `version` (
 ) ENGINE=InnoDB;
 INSERT INTO version (v_major, v_minor, v_patch, v_realpatch, v_tag, v_database, v_acl) VALUES (0, 0, 0, 0, '', 0, 0);
 
---
--- Table structure for table `customlists`
---
-
-DROP TABLE IF EXISTS `customlists`;
-CREATE TABLE `customlists` (
-  `cl_list_slno` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `cl_list_id` int(10) unsigned NOT NULL COMMENT 'ID OF THE lIST FOR NEW TAKE SELECT MAX(cl_list_id)+1',
-  `cl_list_item_id` int(10) unsigned DEFAULT NULL COMMENT 'ID OF THE lIST FOR NEW TAKE SELECT MAX(cl_list_item_id)+1',
-  `cl_list_type` int(10) unsigned NOT NULL COMMENT '0=>List Name 1=>list items 2=>Context 3=>Template 4=>Sentence 5=> SavedTemplate 6=>CustomButton',
-  `cl_list_item_short` varchar(10) DEFAULT NULL,
-  `cl_list_item_long` text,
-  `cl_list_item_level` int(11) DEFAULT NULL COMMENT 'Flow level for List Designation',
-  `cl_order` int(11) DEFAULT NULL,
-  `cl_deleted` tinyint(1) DEFAULT '0',
-  `cl_creator` int(11) DEFAULT NULL,
-  PRIMARY KEY (`cl_list_slno`)
-) ENGINE=InnoDB AUTO_INCREMENT=1;
-INSERT INTO customlists(cl_list_id,cl_list_type,cl_list_item_long) VALUES (1,2,'Subjective');
-INSERT INTO customlists(cl_list_id,cl_list_type,cl_list_item_long) VALUES (2,2,'Objective');
-INSERT INTO customlists(cl_list_id,cl_list_type,cl_list_item_long) VALUES (3,2,'Assessment');
-INSERT INTO customlists(cl_list_id,cl_list_type,cl_list_item_long) VALUES (4,2,'Plan');
-
---
--- Table structure for table `template_users`
---
-
-DROP TABLE IF EXISTS `template_users`;
-CREATE TABLE `template_users` (
-  `tu_id` int(11) NOT NULL AUTO_INCREMENT,
-  `tu_user_id` int(11) DEFAULT NULL,
-  `tu_facility_id` int(11) DEFAULT NULL,
-  `tu_template_id` int(11) DEFAULT NULL,
-  `tu_template_order` int(11) DEFAULT NULL,
-  PRIMARY KEY (`tu_id`),
-  UNIQUE KEY `templateuser` (`tu_user_id`,`tu_template_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1;
 
 DROP TABLE IF EXISTS `product_warehouse`;
 CREATE TABLE `product_warehouse` (
@@ -7548,9 +7294,9 @@ CREATE TABLE `esign_signatures` (
   KEY `table` (`table`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
--- 
+--
 -- Table structure for table `log_comment_encrypt`
--- 
+--
 
 DROP TABLE IF EXISTS `log_comment_encrypt`;
 CREATE TABLE IF NOT EXISTS `log_comment_encrypt` (
@@ -7818,3 +7564,58 @@ CREATE TABLE `form_clinical_instructions` (
   `activity` TINYINT DEFAULT 1 NULL,
   PRIMARY KEY (`id`)
 )ENGINE=InnoDB;
+
+--
+-- Table structure for table `updater_users`
+--
+DROP TABLE IF EXISTS `updater_users`;
+CREATE TABLE `updater_users` (
+  `authUserId` int(11) NOT NULL,
+  `date` datetime NOT NULL
+) ENGINE=InnoDB;
+
+
+--
+-- Table structure for table `updater_settings`
+--
+DROP TABLE IF EXISTS `updater_settings`;
+CREATE TABLE `updater_settings` (
+  `name` varchar(255) NOT NULL,
+  `value` varchar(255) NOT NULL
+) ENGINE=InnoDB;
+
+
+--
+-- Table structure for table `updater_user_mode_download_entry`
+--
+DROP TABLE IF EXISTS `updater_user_mode_download_entry`;
+CREATE TABLE `updater_user_mode_download_entry` (
+  `filename` varchar(255) NOT NULL,
+  `status` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `old_name` varchar(255) NOT NULL
+) ENGINE=InnoDB;
+
+--
+-- Table structure for table `updater_user_mode_backup_entry`
+--
+DROP TABLE IF EXISTS `updater_user_mode_backup_entry`;
+CREATE TABLE `updater_user_mode_backup_entry` (
+  `filename` varchar(255) NOT NULL,
+  `status` varchar(255) NOT NULL,
+  `original_name` varchar(255) NOT NULL,
+  `old_name` varchar(255) NOT NULL
+) ENGINE=InnoDB;
+
+--
+-- Table structure for table `lims_analysisrequests`
+--
+
+CREATE TABLE IF NOT EXISTS `lims_analysisrequests` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `procedure_order_id` int(11) NOT NULL COMMENT 'references procedure_order.procedure_order_id ',
+ `analysisrequest_id` varchar(80) NOT NULL COMMENT 'refers to analysis request id in the lims',
+ `status` text NOT NULL COMMENT 'received, processing, complete',
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `id` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8

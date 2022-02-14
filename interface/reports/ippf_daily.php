@@ -4,6 +4,7 @@
 include_once("../globals.php");
 include_once("../../library/patient.inc");
 include_once("../../library/acl.inc");
+require_once("../../library/report_functions.php");
 
 // Might want something different here.
 //
@@ -122,21 +123,9 @@ else { // not export
    <?php xl('Facility','e'); ?>:
   </td>
   <td valign='top' class='detail'>
-<?php
- // Build a drop-down list of facilities.
- //
- $query = "SELECT id, name FROM facility ORDER BY name";
- $fres = sqlStatement($query);
- echo "   <select name='form_facility'>\n";
- echo "    <option value=''>-- All Facilities --\n";
- while ($frow = sqlFetchArray($fres)) {
-  $facid = $frow['id'];
-  echo "    <option value='$facid'";
-  if ($facid == $_POST['form_facility']) echo " selected";
-  echo ">" . $frow['name'] . "\n";
- }
- echo "   </select>\n";
-?>
+    <?php // Build a drop-down list of facilities.
+      dropDownFacilities();
+    ?>
   </td>
   <td colspan='2' class='detail' nowrap>
    <?php xl('Date','e'); ?>
@@ -215,10 +204,10 @@ if ($_POST['form_submit']) {
 
         $crow = sqlQuery("SELECT lc.new_method " .
           "FROM lists AS l, lists_ippf_con AS lc WHERE " .
-          "l.pid = '$last_pid' AND l.begdate <= '$from_date' AND " .
-          "( l.enddate IS NULL OR l.enddate > '$from_date' ) AND " .
+          "l.pid = ? AND l.begdate <= ? AND " .
+          "( l.enddate IS NULL OR l.enddate > ? ) AND " .
           "l.activity = 1 AND l.type = 'contraceptive' AND lc.id = l.id " .
-          "ORDER BY l.begdate DESC LIMIT 1");
+          "ORDER BY l.begdate DESC LIMIT 1", array($last_pid, $from_date, $from_date));
         $amethods = explode('|', empty($crow) ? 'zzz' : $crow['new_method']);
 
         // TBD: We probably want to select the method with highest CYP here,

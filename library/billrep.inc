@@ -92,7 +92,7 @@
         // just the data entry date; instead we want to go by the encounter date
         // which is the date in the form_encounter table.
         //
-        $sql = "SELECT distinct form_encounter.date AS enc_date, form_encounter.pid AS enc_pid, " .
+        $sql = "SELECT distinct form_encounter.date AS enc_date, form_encounter.pid AS enc_pid, form_encounter.billing_note AS enc_billing_note, " .
             "form_encounter.encounter AS enc_encounter, form_encounter.provider_id AS enc_provider_id, billing.* " .
             "FROM form_encounter " .
             "LEFT OUTER JOIN billing ON " .
@@ -191,9 +191,9 @@
             return;
 
         if ($skip == "()")
-            sqlStatement("update billing set billed=1 where id in $list");
+            sqlStatement("update billing set billed=1 where id in ?", array($list));
         else
-            sqlStatement("update billing set billed=1 where id in $list and id not in $skip");
+            sqlStatement("update billing set billed=1 where id in ? and id not in ?", array($list, $skip));
 
         return;
     }

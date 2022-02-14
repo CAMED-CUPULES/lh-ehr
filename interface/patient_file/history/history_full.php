@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
- * @package LibreEHR
+ * @package LibreHealth EHR
  * @author  Brady Miller <brady@sparmy.com>
  * @link    http://librehealth.io
  */
@@ -33,21 +33,25 @@ require_once("history.inc.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/options.js.php");
+require_once("$srcdir/headers.inc.php");
 $CPR = 4; // cells per row
 
 // Check authorization.
 if (acl_check('patients','med')) {
   $tmp = getPatientData($pid, "squad");
   if ($tmp['squad'] && ! acl_check('squads', $tmp['squad']))
-   die(htmlspecialchars(xl("Not authorized for this squad."),ENT_NOQUOTES));
+   die(xlt("Not authorized for this squad."));
 }
 if ( !acl_check('patients','med','',array('write','addonly') ))
-  die(htmlspecialchars(xl("Not authorized"),ENT_NOQUOTES));
+  die(xlt("Not authorized"));
 ?>
 <html>
 <head>
-<?php html_header_show();?>
-<link rel="stylesheet" href="<?php echo $css_header ?>" type="text/css">
+<?php 
+    html_header_show();
+    //  Include datepicker library
+  call_required_libraries(array("jquery-min-1-3-2","datepicker"));
+?>
 
 <style>
 .control_label {
@@ -56,15 +60,6 @@ if ( !acl_check('patients','med','',array('write','addonly') ))
 }
 </style>
 
-<style type="text/css">@import url(../../../library/dynarch_calendar.css);</style>
-
-<script type="text/javascript" src="../../../library/dialog.js"></script>
-<script type="text/javascript" src="../../../library/textformat.js"></script>
-<script type="text/javascript" src="../../../library/dynarch_calendar.js"></script>
-<?php include_once("{$GLOBALS['srcdir']}/dynarch_calendar_en.inc.php"); ?>
-<script type="text/javascript" src="../../../library/dynarch_calendar_setup.js"></script>
-
-<script type="text/javascript" src="../../../library/js/jquery.1.3.2.js"></script>
 <script type="text/javascript" src="../../../library/js/common.js"></script>
 <?php include_once("{$GLOBALS['srcdir']}/options.js.php"); ?>
 
@@ -176,7 +171,7 @@ function smoking_statusClicked(cb)
      {
      document.getElementById('form_tobacco').selectedIndex = 6;
      }
-	 radioChange(document.getElementById('form_tobacco').value);	 
+     radioChange(document.getElementById('form_tobacco').value);     
 }
 
 // The ID of the input element to receive a found code.
@@ -218,8 +213,8 @@ $(document).ready(function(){
 
 <style type="text/css">
 div.tab {
-	height: auto;
-	width: auto;
+    height: auto;
+    width: auto;
 }
 </style>
 
@@ -242,17 +237,17 @@ $fres = sqlStatement("SELECT * FROM layout_options " .
     <input type='hidden' name='mode' value='save'>
 
     <div>
-        <span class="title"><?php echo htmlspecialchars(xl('Patient History / Lifestyle'),ENT_NOQUOTES); ?></span>
+        <span class="title"><?php echo xlt('Patient History / Lifestyle'); ?></span>
     </div>
     <div style='float:left;margin-right:10px'>
-  <?php echo htmlspecialchars(xl('for'),ENT_NOQUOTES);?>&nbsp;<span class="title"><a href="../summary/demographics.php" onclick='top.restoreSession()'><?php echo htmlspecialchars(getPatientName($pid),ENT_NOQUOTES); ?></a></span>
+  <?php echo xlt('for');?>&nbsp;<span class="title"><a href="../summary/demographics.php" onclick='top.restoreSession()'><?php echo text(getPatientName($pid)); ?></a></span>
     </div>
     <div>
         <a href="javascript:submit_history();" class='css_button'>
-            <span><?php echo htmlspecialchars(xl('Save'),ENT_NOQUOTES); ?></span>
+            <span><?php echo xlt('Save'); ?></span>
         </a>
-        <a href="history.php" <?php if (!$GLOBALS['concurrent_layout']) echo "target='Main'"; ?> class="css_button" onclick="top.restoreSession()">
-            <span><?php echo htmlspecialchars(xl('Back To View'),ENT_NOQUOTES); ?></span>
+        <a href="history.php" class="css_button" onclick="top.restoreSession()">
+            <span><?php echo xlt('Back To View'); ?></span>
         </a>
     </div>
 

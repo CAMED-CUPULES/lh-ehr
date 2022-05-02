@@ -5,13 +5,12 @@ $config_file = dirname(__FILE__).'/gacl.ini.php';
 require_once(dirname(__FILE__).'/admin/gacl_admin.inc.php');
 require_once(ADODB_DIR .'/adodb-xmlschema.inc.php');
 
-
-$db_table_prefix = $gacl->_db_table_prefix;
-$db_type = $gacl->_db_type;
-$db_name = $gacl->_db_name;
-$db_host = $gacl->_db_host;
-$db_user = $gacl->_db_user;
-$db_password = $gacl->_db_password;
+$db_table_prefix = $gacl>_db_table_prefix;
+$db_type = $gacl>_db_type;
+$db_name = $gacl>_db_name;
+$db_host = $gacl>_db_host;
+$db_user = $gacl>_db_user;
+$db_password = $gacl>_db_password;
 
 $failed = 0;
 echo '<h4 class="librehealth-color">Configuration...</h4>';

@@ -1,0 +1,22 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "dev",
+			"path": "modules/report_generator/",
+			"problemMatcher": [],
+			"label": "npm: dev - modules/report_generator",
+			"detail": "npm run development"
+		},
+		{
+			"type": "npm",
+			"script": "build",
+			"path": "assets/js/jquery-datetimepicker-2-5-4/",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: build - assets/js/jquery-datetimepicker-2-5-4",
+			"detail": "npm run minify && npm run concat && npm run minifyconcat"
+		}
+	]
+}

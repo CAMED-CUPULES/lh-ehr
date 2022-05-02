@@ -35,7 +35,7 @@ $ACCEPTIP = '127.0.0.1';
  */
 $driver = 'mysql';
 $host = 'localhost'; // DSN for odbc
-$uid = 'root';
+$uid = 'camedadmin';
 $pwd = 'garbase-it-is';
 $database = 'test';
 

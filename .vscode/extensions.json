@@ -1,0 +1,25 @@
+{
+    "recommendations": [
+        "pvr.omt-odt-language",
+        "opp.omt",
+        "yuenm18.ooxml-viewer",
+        "mikeebowen.ooxml-validator-vscode",
+        "mikeebowen.ooxml-extension-pack",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "tomoki1207.pdf",
+        "georgewfraser.vscode-javac",
+        "ms-edgedevtools.vscode-edge-devtools",
+        "ms-mssql.sql-database-projects-vscode",
+        "mtxr.sqltools-driver-mysql",
+        "eg2.vscode-npm-script",
+        "leizongmin.node-module-intellisense",
+        "robberphex.php-debug",
+        "xdebug.php-debug",
+        "small.php-ci",
+        "christian-kohler.npm-intellisense",
+        "ms-azuretools.vscode-docker",
+        "faelv.composer-companion",
+        "ikappas.composer",
+        "eamodio.gitlens"
+    ]
+}

@@ -1,3 +1,4 @@
+
 #!/usr/bin/python -u
 '''
     ADOdb release upload script
@@ -27,7 +28,7 @@ long_options = ["help", "user=", "dry-run"]
 
 
 def usage():
-    print '''Usage: %s [options] username [release_path]
+   '''Usage: %s [options] username [release_path]
 
     This script will upload the files in the given directory (or the
     current one if unspecified) to Sourceforge.
@@ -68,8 +69,8 @@ def call_rsync(usr, opt, src, dst):
     )
 
     if dry_run:
-        print mkdir
-        print command
+        print (mkdir)
+        print (command)
     else:
         subprocess.call(mkdir, shell=True)
         subprocess.call(command, shell=True)

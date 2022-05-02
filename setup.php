@@ -165,9 +165,8 @@ We recommend you print these instructions for future reference.
  }
 ?>
 
-<?php
-
-$inst = $_POST["inst"];
+<?PHP
+$inst= $_POST["inst"];
 
 if (($config == 1) && ($state < 4)) {
   echo "LibreHealth EHR has already been installed.  If you wish to force re-installation, then edit $installer->conffile (change the 'config' variable to 0), and re-run this script.<br>\n";
@@ -532,10 +531,10 @@ echo "<li>To ensure proper functioning of LibreHealth EHR you must make sure tha
 <ul>
 <li>\"short_open_tag = On\"</li>
 <li>\"display_errors = Off\"</li>
-<li>\"max_execution_time\" set to at least 600</li>
-<li>\"max_input_time\" set to at least 600</li>
+<li>\"max_execution_time\" set to at least 1000</li>
+<li>\"max_input_time\" set to at least 1000</li>
 <li>\"max_input_vars\" set to at least 3000</li>
-<li>\"post_max_size\" set to at least 32M</li>
+<li>\"post_max_size\" set to at least 64M</li>
 <li>\"memory_limit\" set to at least 512M</li>
 <li>\"session.gc_maxlifetime\" set to 14400</li>
 <li>\"error_reporting\" = E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE</li>

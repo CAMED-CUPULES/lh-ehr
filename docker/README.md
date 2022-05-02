@@ -171,6 +171,7 @@ Fields boxed in red are ones that should be filled out. The arrow to the Databas
 ##### MySQL database settings
 
 The following are based off of `docker/.env.mysql`
+
 - MySQL Server Host shold be `db`
 - Port remains unchanged
 - Database name should be whatever you set `MYSQL_DATABASE` to in `docker/.env.mysql`, default should be fine.

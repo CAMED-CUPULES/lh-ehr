@@ -10,9 +10,9 @@
  * build a database on any ADOdb-supported platform using a simple
  * XML schema.
  *
- * Last Editor: $Author: jlim $
- * @author Richard Tango-Lowy & Dan Cech
- * @version $Revision: 1.12 $
+ * Last Editor: jlim $
+ * @author Richard Tango-Lowy, Dan Cech
+ * @version 1.12 $
  *
  * @package axmls
  * @tutorial getting_started.pkg
@@ -1303,11 +1303,7 @@ class adoSchema {
 	* @param object $db ADOdb database connection object.
 	*/
 	function __construct( $db ) {
-		// Initialize the environment
-		$this->mgq = get_magic_quotes_runtime();
-		ini_set("magic_quotes_runtime", 0);
-		#set_magic_quotes_runtime(0);
-
+		// Initialize the environment;
 		$this->db = $db;
 		$this->debug = $this->db->debug;
 		$this->dict = NewDataDictionary( $this->db );

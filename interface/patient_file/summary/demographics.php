@@ -1392,75 +1392,91 @@
                 }
             }
             }
-            if (!$counterFlag) {
-                echo "&nbsp;&nbsp;" . htmlspecialchars(xl('None'),ENT_NOQUOTES);
-            } ?>
-    </div>
-    <?php  }  // close advanced dir block
-      // Show Clinical Reminders for any user that has rules that are permitted.
-      $clin_rem_check = resolve_rules_sql('','0',TRUE,'',$_SESSION['authUser']);
-      if ( (!empty($clin_rem_check)) && ($GLOBALS['enable_cdr'] && $GLOBALS['enable_cdr_crw']) ) {
-         // clinical summary expand collapse widget
-         $widgetTitle = xl("Clinical Reminders");
-         $widgetLabel = "clinical_reminders";
-         $widgetButtonLabel = xl("Edit");
-         $widgetButtonLink = "../reminder/clinical_reminders.php?patient_id=".$pid;;
-         $widgetButtonClass = "";
-         $linkMethod = "html";
-         $bodyClass = "summary_item small";
-         $widgetAuth = true;
-         $fixedWidth = false;
-         expand_collapse_widget($widgetTitle, $widgetLabel, $widgetButtonLabel , $widgetButtonLink, $widgetButtonClass, $linkMethod, $bodyClass, $widgetAuth, $fixedWidth);
-         echo "<br/>";
-         echo "<div style='margin-left:10px' class='text'><image src='../../pic/ajax-loader.gif'/></div><br/>";
-         echo "</div>";
-         } // end if crw
-       // Show current and upcoming appointments.
-       //
-       // Recurring appointment support and Appointment Display Sets
-       // added to Appointments by Ian Jardine ( epsdky ).
-       //
-       if (isset($pid) && !$GLOBALS['disable_calendar']) {
-       //
-         $current_date2 = date('Y-m-d');
-         $events = array();
-         $apptNum = (int)$GLOBALS['number_of_appts_to_show'];
-         if($apptNum != 0) $apptNum2 = abs($apptNum);
-         else $apptNum2 = 10;
-         //
-         $mode1 = !$GLOBALS['appt_display_sets_option'];
-         $colorSet1 = $GLOBALS['appt_display_sets_color_1'];
-         $colorSet2 = $GLOBALS['appt_display_sets_color_2'];
-         $colorSet3 = $GLOBALS['appt_display_sets_color_3'];
-         $colorSet4 = $GLOBALS['appt_display_sets_color_4'];
-         //
-         if($mode1) $extraAppts = 1;
-         else $extraAppts = 6;
-         $events = fetchNextXAppts($current_date2, $pid, $apptNum2 + $extraAppts);
-         //////
-         if($events) {
-           $selectNum = 0;
-           $apptNumber = count($events);
-           //
-           if($apptNumber <= $apptNum2) {
-             $extraApptDate = '';
-             //
-           } else if($mode1 && $apptNumber == $apptNum2 + 1) {
-             $extraApptDate = $events[$apptNumber - 1]['pc_eventDate'];
-             array_pop($events);
-             --$apptNumber;
-             $selectNum = 1;
-             //
-           } else if($apptNumber == $apptNum2 + 6) {
-             $extraApptDate = $events[$apptNumber - 1]['pc_eventDate'];
-             array_pop($events);
-             --$apptNumber;
-             $selectNum = 2;
-             //
-           } else { // mode 2 - $apptNum2 < $apptNumber < $apptNum2 + 6
-             $extraApptDate = '';
-             $selectNum = 2;
-             //
+           //////
+            echo "<div " . $apptStyle . ">";
+            echo "<a href='javascript:oldEvt(" . htmlspecialchars(preg_replace("/-/", "", $row['pc_eventDate']),ENT_QUOTES) . ', ' . htmlspecialchars($row['pc_eid'],ENT_QUOTES) . ")' title='" . htmlspecialchars($etitle,ENT_QUOTES) . "'>";
+            echo "<b>" . htmlspecialchars($row['pc_eventDate'],ENT_NOQUOTES) . ", ";
+            echo htmlspecialchars(sprintf("%02d", $disphour) .":$dispmin " . xl($dispampm) . " (" . xl($dayname),ENT_NOQUOTES)  . ")</b> ";
+            if ($row['pc_recurrtype']) echo "<img src='" . $GLOBALS['webroot'] . "/interface/main/calendar/modules/PostCalendar/pntemplates/default/images/repeating8.png' border='0' style='margin:0px 2px 0px 2px;' title='".htmlspecialchars(xl("Repeating event"),ENT_QUOTES)."' alt='".htmlspecialchars(xl("Repeating event"),ENT_QUOTES)."'>";
+            echo "<span title='" . generate_display_field(array('data_type'=>'1','list_id'=>'apptstat'),$row['pc_apptstatus']) . "'>";
+            echo "<br>" . xlt('Status') . "( " . htmlspecialchars($row['pc_apptstatus'],ENT_NOQUOTES) . " ) </span>";
+            echo htmlspecialchars(xl_appt_category($row['pc_catname']),ENT_NOQUOTES) . "\n";
+            if ($row['pc_hometext']) echo " <span style='color:green'> Com</span>";
+            echo "<br>" . htmlspecialchars($row['ufname'] . " " . $row['ulname'],ENT_NOQUOTES) . "</a></div>\n";
+            do_action( 'demographics_after_appointment', $row );
+            //////
+        }
+        if ($resNotNull) { //////
+            if ( $count < 1 ) { 
+                echo "&nbsp;&nbsp;" . htmlspecialchars(xl('None'),ENT_NOQUOTES); 
+            } else { //////
+              if($extraApptDate) echo "<div style='color:#0000cc;'><b>" . attr($extraApptDate) . " ( + ) </b></div>";
+              else echo "<div><hr></div>";
+            }
+            echo "</div>";
+            do_action( 'demographics_after_get_appointments' );
+        
+      // End of Appointments.
+            
+    // Show PAST appointments.
+    // added by Terry Hill to allow reverse sorting of the appointments
+     $direction = "ASC";
+    if ($GLOBALS['num_past_appointments_to_show'] < 0) {
+       $direction = "DESC";
+       ($showpast = -1 * $GLOBALS['num_past_appointments_to_show'] );
+       }
+       else
+       {
+       $showpast = $GLOBALS['num_past_appointments_to_show'];
+       }
+       
+    if (isset($pid) && !$GLOBALS['disable_calendar'] && $showpast > 0) {
+     $query = "SELECT e.pc_eid, e.pc_aid, e.pc_title, e.pc_eventDate, " .
+      "e.pc_startTime, e.pc_hometext, u.fname, u.lname, u.mname, " .
+      "c.pc_catname, e.pc_apptstatus " .
+      "FROM libreehr_postcalendar_events AS e, users AS u, " .
+      "libreehr_postcalendar_categories AS c WHERE " .
+      "e.pc_pid = ? AND e.pc_eventDate < CURRENT_DATE AND " .
+      "u.id = e.pc_aid AND e.pc_catid = c.pc_catid " .
+      "ORDER BY e.pc_eventDate $direction , e.pc_startTime DESC " . 
+      "LIMIT " . $showpast;
+    
+     $pres = sqlStatement($query, array($pid) );
+
+    // appointments expand collapse widget
+        $widgetTitle = xl("Past Appoinments");
+        $widgetLabel = "past_appointments";
+        $widgetButtonLabel = '';
+        $widgetButtonLink = '';
+        $widgetButtonClass = '';
+        $linkMethod = "javascript";
+        $bodyClass = "summary_item small";
+        $widgetAuth = false; //no button
+        $fixedWidth = false;
+        expand_collapse_widget($widgetTitle, $widgetLabel, $widgetButtonLabel , $widgetButtonLink, $widgetButtonClass, $linkMethod, $bodyClass, $widgetAuth, $fixedWidth);   
+        $count = 0;
+        while($row = sqlFetchArray($pres)) {
+            $count++;
+            $dayname = date("l", strtotime($row['pc_eventDate']));
+            $dispampm = "am";
+            $disphour = substr($row['pc_startTime'], 0, 2) + 0;
+            $dispmin  = substr($row['pc_startTime'], 3, 2);
+            if ($disphour >= 12) {
+                $dispampm = "pm";
+                if ($disphour > 12) $disphour -= 12;
+            }
+            if ($row['pc_hometext'] != "") {
+                $etitle = xl('Comments').": ".($row['pc_hometext'])."\r\n".$etitle;
+            }
+            echo "<a href='javascript:oldEvt(" . htmlspecialchars(preg_replace("/-/", "", $row['pc_eventDate']),ENT_QUOTES) . ', ' . htmlspecialchars($row['pc_eid'],ENT_QUOTES) . ")' title='" . htmlspecialchars($etitle,ENT_QUOTES) . "'>";
+            echo "<b>" . htmlspecialchars(xl($dayname) . ", " . $row['pc_eventDate'],ENT_NOQUOTES) . "</b>" . xlt("Status") .  "(";
+            echo " " .  generate_display_field(array('data_type'=>'1','list_id'=>'apptstat'),$row['pc_apptstatus']) . ")<br>";   // can't use special char parser on this
+            echo htmlspecialchars("$disphour:$dispmin ") . xl($dispampm) . " ";
+            echo htmlspecialchars($row['fname'] . " " . $row['lname'],ENT_NOQUOTES) . "</a><br>\n";
+        }
+        if (isset($pres) && $res != null) {
+           if ( $count < 1 ) { 
+               echo "&nbsp;&nbsp;" . htmlspecialchars(xl('None'),ENT_NOQUOTES);          
            }
            //
            $limitApptIndx = $apptNum2 - 1;
@@ -1794,4 +1810,3 @@ else {
 }
 
 
-?>

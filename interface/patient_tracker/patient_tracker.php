@@ -537,9 +537,8 @@ function validateForm() {
 
 <?php
     $prev_appt_date_time = "";
-
-    $overbookStatuses = array_map('trim', explode( ',', $GLOBALS['appt_overbook_statuses'] ) );
-  foreach ( $appointments as $appointment ) {
+    $overbook_Statuses = array_map('trim', explode( ',', $GLOBALS['appt_overbook_statuses'] ) );
+	foreach ( $appointments as $appointment ) {
 
                 # Collect appt date and set up squashed date for use below
                 $date_appt = $appointment['pc_eventDate'];
@@ -613,11 +612,11 @@ function validateForm() {
          <?php }
             // flag possible double booked, ignoring canceled appt types
             //  and skipping of ALL providers are viewed
-            $apptflagtd = '<td class="detail">';
+            $apptflagtd = '<td class="detail" align="center">';
             if ((count($chk_prov) == 1 ) and $appt_canceled != true) {
                 if ($GLOBALS['ptkr_flag_dblbook']) {
                     if ($appt_date_time === $prev_appt_date_time) {
-                        $apptflagtd = '<td class="detail" bgcolor="orange">';  //TODO Make color configurable
+                        $apptflagtd = '<td class="detail" align="center" bgcolor="orange">';  //TODO Make color configurable
                     }
                     $prev_appt_date_time = $appt_date_time;
                 }
